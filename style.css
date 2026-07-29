@@ -126,6 +126,20 @@
     justify-content: center;
     gap: 6px;
   }
+  .app-version {
+    align-self: center;
+    margin-left: 4px;
+    padding: 2px 8px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    color: var(--text-dim);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    white-space: nowrap;
+    flex: 0 0 auto;
+  }
   .table-wrap {
     padding: 0 16px 28px;
     max-width: 1100px;
@@ -241,18 +255,19 @@
     margin-bottom: 1px;
   }
   .prog-measures {
-    display: grid;            /* 等宽网格：小节统一列宽，填满整行，不再因内容撑宽、换行末尾留空 */
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    display: flex;            /* 单行弹性：小节等宽排列；太挤的小节被 fitMeasureWidths 单独加宽，其余等分会收缩让位 */
+    flex-wrap: nowrap;        /* 不换行 → 不会有"每行末尾空挡" */
     align-items: stretch;
     gap: 0;
     border-radius: 6px;
-    overflow: visible;
+    overflow-x: auto;         /* 极端情况（每小节都长）才出现横向滚动；通常单行装得下 */
     border: 1px solid rgba(88,166,255,0.2);
     background: rgba(88,166,255,0.06);
     margin-top: 1px;
   }
   .measure {
-    min-width: 0;             /* 允许在固定网格列内收缩，和弦过长时交给定制字体缩放而非撑宽 */
+    flex: 1 1 120px;          /* 等宽弹性：默认均分一行；被加宽的小节会被设为固定宽，其余收缩让位 */
+    min-width: 120px;         /* 保底：短和弦小节不会被压到看不清 */
     padding: 2px 4px 0;   /* 底部留白归零：歌词栏紧贴下方虚线边界 */
     border-bottom: 1px dashed rgba(63,185,80,0.3);
     text-align: center;
@@ -308,6 +323,20 @@
     font-size: 0.7em;
     font-weight: 500;
     letter-spacing: 0.3px;
+  }
+  /* 忽略级数模式：隐藏级数行后，和弦字母自动垂直居中（.beat 已 justify-content:center），
+     并略微加粗以弥补失去级数行的视觉锚点；fitMeasureWidths 只改小节宽度不改字号，不影响此处 weight */
+  .beat.no-num .measure-chord { font-weight: 700; }
+  /* 段落标题后的"仅和弦"标记：表明该歌已开启忽略级数 */
+  .ig-tag {
+    font-size: 11px;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    border-radius: 10px;
+    padding: 0 6px;
+    margin-left: 6px;
+    vertical-align: middle;
+    white-space: nowrap;
   }
   .prog-num.none {
     color: var(--text-dim);

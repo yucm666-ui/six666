@@ -6,7 +6,7 @@
 <meta http-equiv="Expires" content="0">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>工作歌单 v4.1</title>
+<title>工作歌单</title>
 <meta name="theme-color" content="#06090d">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -36,6 +36,7 @@
     <button class="btn outline" title="节拍器" onclick="toggleMetronome()"><span>🎵</span><span>节拍器</span></button>
     <button class="btn outline" title="手动新增歌曲" onclick="openAddModal()"><span>＋</span><span>新增歌曲</span></button>
     <button class="btn outline" title="导出修改 / 保存到GitHub" onclick="openExportModal()"><span>📤</span><span>保存到GitHub</span></button>
+    <span class="app-version" id="appVersion"></span>
   </div>
   <div class="key-bar">
     <span class="key-bar-label">🎼</span>
@@ -179,6 +180,7 @@
       <button class="btn outline" id="prevSong" title="上一首" onclick="navigateSong(-1)">◀ 上一首</button>
       <button class="btn outline" id="nextSong" title="下一首" onclick="navigateSong(1)">下一首 ▶</button>
       <button class="btn outline" id="editToggle" title="编辑：修改字母和弦、模块名称，或新增模块，保存后自动推导级数">✏️ 编辑</button>
+      <button class="btn outline" id="ignoreToggle" title="复杂/升降调歌曲：隐藏级数、只看和弦字母；再点恢复级数显示" onclick="toggleIgnoreDegrees(currentDetailId)">🔢 显示级数</button>
       <button class="btn outline" id="editCancel" title="取消编辑" onclick="toggleEditMode()" style="display: none;">✕ 取消</button>
       <button class="detail-close" onclick="closeDetail()">✕ 关闭</button>
     </div>
@@ -256,6 +258,12 @@
       <div class="add-row">
         <label class="add-field">速度<input class="gh-token" id="add-bpm" type="text" placeholder="如：82" inputmode="numeric"></label>
         <label class="add-field">拍号<input class="gh-token" id="add-ts" type="text" value="4/4" placeholder="4/4"></label>
+      </div>
+      <div class="add-row">
+        <label class="add-field" style="flex-basis:100%; flex-direction:row; align-items:center; gap:8px; color:var(--text); font-size:13px;">
+          <input type="checkbox" id="add-ignore" style="width:auto; margin:0; transform:scale(1.2);">
+          <span>忽略级数模式（复杂/升降调歌曲只显示和弦字母，不显示级数，避免级数换算混乱）</span>
+        </label>
       </div>
     </div>
     <div class="export-actions">

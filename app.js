@@ -1,4 +1,14 @@
 
+// ======================== 应用版本号（单一数据源） ========================
+// 界面右上角与浏览器标签会显示此版本，方便平板上核对是否吃到了最新缓存。
+// 升级功能时改这一处即可，无需改别处。
+const APP_VERSION = '1.0.0';
+function applyVersion() {
+  document.title = '工作歌单 v' + APP_VERSION;
+  const el = document.getElementById('appVersion');
+  if (el) el.textContent = 'v' + APP_VERSION;
+}
+
 // ======================== 304首歌曲数据 ========================
 let songs = [];
 
@@ -167,7 +177,8 @@ function bassLetterToDegreeStr(numToken, origKey) {
 // 和弦数 < 拍数时按"均匀分布"定位——和弦 j 落在 floor(j * beats / k) 拍，
 // 例如 4/4 两个和弦落在第1、3拍（而非顺序的第1、2拍），符合和弦谱惯例。
 // 级数(numStr)与和弦(chordStr)按各自符号顺序一一对应，再映射到落拍位置。
-function measureCellsHtml(numStr, chordStr, beats, origKey) {
+// ignoreDeg=true 时隐藏"级数行"（.measure-num），复杂升降调歌曲只看和弦字母，避免级数换算显示混乱
+function measureCellsHtml(numStr, chordStr, beats, origKey, ignoreDeg) {
   const nums = String(numStr == null ? '' : numStr).split('-').map(s => s.trim());
   // 字母串用 splitChordTokens 切分：'-' 是休止符（自身即一个符号），需保留为休止而非分隔符
   const chords = splitChordTokens(chordStr).map(s => s === '-' ? '' : s.trim());
@@ -197,8 +208,8 @@ function measureCellsHtml(numStr, chordStr, beats, origKey) {
         const disp = suffix ? suffix.replace(/^M(?=\d)/, 'maj') : '';
         return root + (disp ? '<small>' + disp + '</small>' : '') + (slash || '');
       }) : '';
-    html += '<div class="beat' + (c ? ' has-chord' : ' rest') + '">'
-      + (nHtml ? '<div class="measure-num">' + nHtml + '</div>' : '')
+    html += '<div class="beat' + (c ? ' has-chord' : ' rest') + (ignoreDeg ? ' no-num' : '') + '">'
+      + (nHtml && !ignoreDeg ? '<div class="measure-num">' + nHtml + '</div>' : '')
       + '<div class="measure-chord' + (c ? '' : ' rest-mark') + '">' + (c ? chordHtml : '-') + '</div>'
       + '</div>';
   }
@@ -442,12 +453,12 @@ function renderRefPanel() {
       const beats = numeratorOf(refSong.timeSig);
       const measures = parseMeasures(val, chordStr, beats);
       const cells = measures.map(m =>
-        '<div class="measure">' + measureCellsHtml(m.num, m.chord, beats, refSong.key) + '</div>'
+        '<div class="measure">' + measureCellsHtml(m.num, m.chord, beats, refSong.key, refSong.ignoreDegrees) + '</div>'
       ).join('');
       return '<div class="prog-section"><span class="prog-label">' + escAttr(pr.n) + '</span><div class="prog-measures">' + cells + '</div></div>';
     }).join('');
     body.innerHTML = html;
-    fitMeasureFonts(body);
+    fitMeasureWidths(body);
     updateRefEditBtn();
     return;
   }
@@ -604,34 +615,52 @@ function autoGrow(el) {
   el.style.height = el.scrollHeight + 'px';
 }
 
-// 小节和弦字号自适应：当某小节内和弦名过长、在固定网格列宽里装不下时，
-// 自动缩小和弦字体（而非把小节撑宽或换行留空），保证和弦字母完整可读。
-// 策略：逐拍独立测量、独立缩放——只有真正挤的那一拍才缩小，不挤的拍保持原大字号，
-// 这样"长和弦不被盖住"与"短和弦尽量大、视奏易看"能兼得，而不是整小节被最长一拍拖累统一变很小。
-function fitMeasureFonts(root) {
+// 小节和弦"太挤被盖住"时，自动调宽当前小节（不再缩小字号）：
+// 字体保持正常大小；只有某小节内和弦字母真实溢出（被裁/被盖）时，才把这一小节单独加宽，
+// 其余小节等分会收缩让出空间（min-width 保底）。整体单行排列，不换行、不留空挡。
+// 实现：小节为 flex 单行等宽；检测到某小节等宽分配下最宽一拍放不下时，
+// 将该小节拍格改为按内容宽度排列并固定其宽度为内容所需宽（紧凑，不浪费空间），从而不裁剪。
+function fitMeasureWidths(root) {
   if (!root || !root.querySelectorAll) return;
-  const MIN_FONT = 10;   // 视奏可读性下限：缩到此仍装不下才允许被裁，避免字小到看不清
   root.querySelectorAll('.prog-measures').forEach(pm => {
-    pm.querySelectorAll('.measure').forEach(m => {
-      const chords = m.querySelectorAll('.measure-chord');
-      if (!chords.length) return;
-      const cs = getComputedStyle(m);
-      const padX = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
-      const avail = m.clientWidth - padX;            // 小节内容区可用宽
-      if (!(avail > 0)) return;                       // 容器不可见（clientWidth=0）时跳过
-      const perBeatAvail = avail / chords.length;     // flex 等分下每拍可用宽
-      chords.forEach(c => {
-        const bcs = getComputedStyle(c);
-        const beatPadX = parseFloat(bcs.paddingLeft) + parseFloat(bcs.paddingRight);
-        const baseFont = parseFloat(bcs.fontSize) || 14;
-        const cw = c.scrollWidth + beatPadX;          // 该和弦自身真实宽（nowrap 下准确，不受父级 min-width:0 影响）
-        if (cw <= perBeatAvail) return;               // 这拍装得下，保持原字号不缩
-        const r = perBeatAvail / cw;
-        if (r >= 1) return;
-        const newFont = Math.max(MIN_FONT, Math.min(baseFont, baseFont * r)); // 下限10px，绝不放大
-        if (newFont < baseFont) c.style.fontSize = newFont + 'px';
-      });
+    const measures = Array.from(pm.querySelectorAll('.measure'));
+    if (!measures.length) return;
+    // 先清除上一轮加宽，恢复等分基准，再迭代检测（加宽会挤压邻格，需多次收敛）
+    measures.forEach(m => {
+      m.style.flex = ''; m.style.width = '';
+      m.querySelectorAll('.beat').forEach(b => { b.style.flex = ''; });
     });
+    for (let iter = 0; iter < 6; iter++) {
+      let changed = false;
+      measures.forEach(m => {
+        if (m.dataset.wide === '1') return;            // 已加宽的小节跳过
+        const beats = m.querySelectorAll('.beat');
+        const n = beats.length || 1;
+        let maxBeat = 0, sum = 0;
+        beats.forEach(b => {
+          const c = b.querySelector('.measure-chord');
+          const cw = c ? c.scrollWidth : 0;            // nowrap 下反映真实内容宽（即使被 overflow:hidden 裁也能量到）
+          const bcs = getComputedStyle(b);
+          const w = cw + parseFloat(bcs.paddingLeft) + parseFloat(bcs.paddingRight);
+          if (w > maxBeat) maxBeat = w;
+          sum += w;
+        });
+        if (!maxBeat) return;
+        const cs = getComputedStyle(m);
+        const padX = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
+        // 等宽拍格下不溢出所需最小小节宽 = 拍数 × 最宽拍；当前等宽格已满足则不处理
+        const needEqual = maxBeat * n + padX + 2;
+        if (needEqual <= m.clientWidth) return;
+        // 溢出：加宽为内容所需宽，并让拍格按内容宽度排列（紧凑），确保无裁剪
+        m.dataset.wide = '1';
+        m.style.flex = '0 0 auto';
+        m.style.width = Math.ceil(sum + padX + 2) + 'px';
+        beats.forEach(b => { b.style.flex = '0 0 auto'; });
+        changed = true;
+      });
+      if (!changed) break;
+    }
+    measures.forEach(m => { delete m.dataset.wide; });
   });
 }
 
@@ -672,11 +701,12 @@ function sectionHtml(s, k, val, label, inEdit) {
   const cells = measures.map((m, idx) => {
     const lyricsVal = getSectionLyrics(s.id, k, idx);
     return '<div class="measure">' +
-      '<div class="measure-beats">' + measureCellsHtml(m.num, m.chord, beats, s.key) + '</div>' +
+      '<div class="measure-beats">' + measureCellsHtml(m.num, m.chord, beats, s.key, s.ignoreDegrees) + '</div>' +
       '<div class="measure-lyrics" onclick="event.stopPropagation()"><textarea class="lyrics-input" id="lyrics-' + s.id + '-' + k + '-' + idx + '" placeholder="歌词" oninput="autoGrow(this);saveSectionLyrics(' + s.id + ',\'' + k + '\',' + idx + ',this.value)" rows="1" cols="1">' + escAttr(lyricsVal) + '</textarea></div>' +
     '</div>';
   }).join('');
-  return '<div class="prog-section"><span class="prog-label">' + escAttr(effLabel) + '</span><div class="prog-measures">' + cells + '</div></div>';
+  const igTag = s.ignoreDegrees ? ' <span class="ig-tag" title="本歌已开启忽略级数：只看和弦字母">仅和弦</span>' : '';
+  return '<div class="prog-section"><span class="prog-label">' + escAttr(effLabel) + igTag + '</span><div class="prog-measures">' + cells + '</div></div>';
 }
 
 // ======================== 渲染逻辑（升级版 v3 · 精简） ========================
@@ -824,6 +854,7 @@ function openAddModal() {
   fill('add-key', 'C'); fill('add-mk', ''); fill('add-fk', '');
   ['add-name', 'add-artist', 'add-bpm'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   const ts = document.getElementById('add-ts'); if (ts) ts.value = '4/4';
+  const ig = document.getElementById('add-ignore'); if (ig) ig.checked = false;
   document.getElementById('addMask').classList.add('open');
   const n = document.getElementById('add-name');
   if (n) n.focus();
@@ -845,7 +876,8 @@ function addSong() {
     maleKey: gv('add-mk'),
     femaleKey: gv('add-fk'),
     bpm: gv('add-bpm'),
-    timeSig: gv('add-ts') || '4/4'
+    timeSig: gv('add-ts') || '4/4',
+    ignoreDegrees: (() => { const el = document.getElementById('add-ignore'); return !!(el && el.checked); })()
   };
   songs.push(song);
   closeAddModal();
@@ -1206,8 +1238,9 @@ function renderDetail() {
   html += '</div>';
   bodyEl.innerHTML = html;
   bodyEl.querySelectorAll('.lyrics-input').forEach(el => autoGrow(el));
-  fitMeasureFonts(bodyEl);
+  fitMeasureWidths(bodyEl);
   updateEditBtn();
+  updateIgnoreBtn();
 }
 // 关闭详情区，回到歌曲列表；silent=true 时跳过重渲染（由调用方统一渲染，如 switchTab）
 function closeDetail(silent) {
@@ -1236,6 +1269,24 @@ function toggleEditMode() {
   render();
   renderRefPanel();
   updateEditBtn();
+}
+// 切换"忽略级数模式"：开启后该歌只显示和弦字母、隐藏级数行。变更随下次"保存到 GitHub"持久化
+// （buildExportData 的 songDiff 以整首歌对象做 diff，ignoreDegrees 字段自然包含在内）。
+function toggleIgnoreDegrees(id) {
+  const song = songs.find(s => s.id === id);
+  if (!song) return;
+  song.ignoreDegrees = !song.ignoreDegrees;
+  renderDetail();
+  renderRefPanel();
+  updateIgnoreBtn();
+}
+function updateIgnoreBtn() {
+  const b = document.getElementById('ignoreToggle');
+  if (!b) return;
+  const song = songs.find(s => s.id === currentDetailId);
+  const on = !!(song && song.ignoreDegrees);
+  b.textContent = on ? '🔕 已隐藏级数' : '🔢 显示级数';
+  b.className = 'btn outline' + (on ? ' active' : '');
 }
 function updateEditBtn() {
   const b = document.getElementById('editToggle');
@@ -1649,15 +1700,15 @@ document.addEventListener('mouseover', e => { const el = e.target.closest('.meas
 document.addEventListener('mousemove', e => { if (tipVisible) positionTip(e); });
 document.addEventListener('mouseout', e => { const el = e.target.closest('.measure-chord'); if (el) hideChordTip(); });
 
-// 窗口尺寸变化（如平板横竖屏切换）后，网格列宽改变，重新计算各小节和弦字号
+// 窗口尺寸变化（如平板横竖屏切换）后，列宽改变，重新计算哪些小节需要加宽
 let _fitRAF = 0;
 window.addEventListener('resize', () => {
   if (_fitRAF) cancelAnimationFrame(_fitRAF);
   _fitRAF = requestAnimationFrame(() => {
     const db = document.getElementById('detailBody');
-    if (db) fitMeasureFonts(db);
+    if (db) fitMeasureWidths(db);
     const rp = document.getElementById('refPanelBody');
-    if (rp) fitMeasureFonts(rp);
+    if (rp) fitMeasureWidths(rp);
   });
 });
 
@@ -1771,6 +1822,7 @@ function loadDataAndInit(data) {
     Object.keys(_sectionLyrics).forEach(k => { if (!(k in remoteLyrics) && !(k in curLyrics)) delete _sectionLyrics[k]; });
     Object.assign(_sectionLyrics, remoteLyrics, curLyrics);
   }
+  applyVersion();
   selectKeyButton(transposeKey);
   setMetroBpm(metroBpm);
   initMetroVol();
