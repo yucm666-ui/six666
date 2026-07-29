@@ -2,7 +2,7 @@
 // 部署：GitHub Pages 子路径（/repo/）兼容——全部使用相对路径，注册时用 'sw.js'。
 // 重要：每次修改 app.js / index.html / style.css / songs.json 后，请把 VERSION 升一级，
 //       旧缓存会在激活时自动清理，用户下次打开即为最新版。
-const VERSION = 'songbook-v1';
+const VERSION = 'songbook-v2';
 const APP_SHELL = [
   './',
   'index.html',
@@ -17,7 +17,12 @@ const DATA_URL = 'songs.json'; // 数据文件：在线永远拿最新，离线�
 self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(VERSION)
-      .then(c => c.addAll(APP_SHELL.concat([DATA_URL])))
+      // 逐个缓存并容忍个别失败（如图标临时 404）：避免一个资源坏掉导致整个离线功能报废
+      .then(c => Promise.allSettled(APP_SHELL.concat([DATA_URL]).map(u => c.add(u))))
+      .then(results => {
+        const failed = results.filter(r => r.status === 'rejected').length;
+        if (failed) console.warn('SW 预缓存有 ' + failed + ' 个资源失败（已跳过）');
+      })
       .then(() => self.skipWaiting())
   );
 });
