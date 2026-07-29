@@ -1,0 +1,1128 @@
+
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface-hover: #1c2331;
+    --border: #30363d;
+    --text: #e6edf3;
+    --text-dim: #8b949e;
+    --accent: #58a6ff;
+    --accent-dim: #1f6feb;
+    --key-C: #58a6ff;
+    --key-G: #3fb950;
+    --key-Am: #d29922;
+    --key-D: #bc8cff;
+    --key-Em: #f85149;
+    --key-F: #39c5cf;
+    --key-Bm: #e3b341;
+
+  --key-A: #f778ba;
+  --key-E: #ff6b6b;
+  --key-Dm: #4ecdc4;
+
+    --key-other: #8b949e;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans CJK SC', 'Source Han Sans SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    padding: 0;
+  }
+  .toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 5px 12px;
+  }
+  .toolbar-top {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 4px;
+    align-items: center;
+  }
+  .search-box {
+    flex: 0 0 220px;
+    min-width: 100px;
+    max-width: 320px;
+    position: relative;
+  }
+  .search-box input {
+    width: 100%;
+    padding: 6px 32px 6px 30px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .search-box input:focus {
+    border-color: var(--accent);
+  }
+  .search-box .icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-dim);
+    font-size: 16px;
+    pointer-events: none;
+  }
+  .search-btn {
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 16px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    line-height: 1;
+    display: none;
+  }
+  .search-btn:hover {
+    color: var(--text);
+    background: rgba(255,255,255,0.06);
+  }
+  .search-btn.visible {
+    display: inline-block;
+  }
+  .top-controls { display: none; }
+  .btn {
+    padding: 5px 10px;
+    background: var(--accent-dim);
+    border: none;
+    border-radius: 6px;
+    color: #fff;
+    font-size: 12px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    white-space: nowrap;
+  }
+  .btn:hover { opacity: 0.85; }
+  .btn.outline {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+  }
+  .btn.outline:hover {
+    border-color: var(--accent);
+    color: var(--text);
+  }
+  /* 工具栏右侧两个操作按钮（节拍器 / 导出·保存到GitHub）撑满当前行右侧 */
+  .toolbar-top > .btn.outline {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .table-wrap {
+    padding: 0 16px 28px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+  thead th {
+    position: sticky;
+    top: 0; /* JS动态设置 */
+    background: var(--surface);
+    z-index: 10;
+    padding: 8px 12px;
+    text-align: left;
+    font-weight: 600;
+    color: var(--text-dim);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    user-select: none;
+  }
+  thead th:hover { color: var(--text); }
+  thead th .sort-arrow { font-size: 10px; margin-left: 4px; opacity: 0.5; }
+  thead th.sorted .sort-arrow { opacity: 1; color: var(--accent); }
+  tbody tr {
+    border-bottom: 1px solid #21262d;
+    transition: background 0.15s;
+  }
+  tbody tr:hover { background: var(--surface-hover); }
+  tbody td {
+    padding: 7px 12px;
+    vertical-align: middle;
+  }
+  .col-id { width: 50px; color: var(--text-dim); text-align: center; }
+  .col-name { font-weight: 500; }
+  .col-artist { color: var(--text-dim); }
+  .col-key { width: 80px; }
+  .col-male { width: 55px; text-align: center; font-size: 13px; color: var(--text-dim); }
+  .col-female { width: 55px; text-align: center; font-size: 13px; color: var(--text-dim); }
+  .col-bpm { width: 55px; text-align: center; font-size: 13px; color: var(--text-dim); }
+  .col-timesig { width: 65px; text-align: center; font-size: 13px; color: var(--text-dim); font-family: 'Consolas', 'Monaco', monospace; }
+  .key-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: 'Consolas', 'Monaco', monospace;
+  }
+  .key-C { background: rgba(88,166,255,0.15); color: var(--key-C); border: 1px solid rgba(88,166,255,0.3); }
+  .key-G { background: rgba(63,185,80,0.15); color: var(--key-G); border: 1px solid rgba(63,185,80,0.3); }
+  .key-Am { background: rgba(210,153,34,0.15); color: var(--key-Am); border: 1px solid rgba(210,153,34,0.3); }
+  .key-D { background: rgba(188,140,255,0.15); color: var(--key-D); border: 1px solid rgba(188,140,255,0.3); }
+  .key-Em { background: rgba(248,81,73,0.15); color: var(--key-Em); border: 1px solid rgba(248,81,73,0.3); }
+  .key-F { background: rgba(57,197,207,0.15); color: var(--key-F); border: 1px solid rgba(57,197,207,0.3); }
+  .key-Bm { background: rgba(227,179,65,0.15); color: var(--key-Bm); border: 1px solid rgba(227,179,65,0.3); }
+  .key-other { background: rgba(139,148,158,0.1); color: var(--key-other); border: 1px solid rgba(139,148,158,0.2); }
+
+  .key-A { background: rgba(247,120,186,0.15); color: var(--key-A); border: 1px solid rgba(247,120,186,0.3); }
+  .key-E { background: rgba(255,107,107,0.15); color: var(--key-E); border: 1px solid rgba(255,107,107,0.3); }
+
+  .key-Db { background: rgba(88,166,255,0.2); color: #58a6ff; border: 1px solid rgba(88,166,255,0.4); }
+  .key-Eb { background: rgba(63,185,80,0.2); color: #3fb950; border: 1px solid rgba(63,185,80,0.4); }
+  .key-Ab { background: rgba(210,153,34,0.2); color: #d29922; border: 1px solid rgba(210,153,34,0.4); }
+  .key-Bb { background: rgba(188,140,255,0.2); color: #bc8cff; border: 1px solid rgba(188,140,255,0.4); }
+  .key-Gb { background: rgba(248,81,73,0.2); color: #f85149; border: 1px solid rgba(248,81,73,0.4); }
+  .key-B { background: rgba(57,197,207,0.2); color: #39c5cf; border: 1px solid rgba(57,197,207,0.4); }
+  .key-Dm { background: rgba(78,205,196,0.15); color: var(--key-Dm); border: 1px solid rgba(78,205,196,0.3); }
+
+  .empty-row {
+    text-align: center;
+    padding: 40px;
+    color: var(--text-dim);
+  }
+  @media (max-width: 700px) {
+    .toolbar-top { flex-direction: column; align-items: stretch; }
+    .search-box { max-width: none; }
+    thead th { top: auto; }
+    .col-timesig { display: none; }
+  }
+
+  .song-row { cursor: pointer; }
+  .prog-toggle {
+    display: inline-block;
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-left: 4px;
+    transition: transform 0.2s;
+  }
+  .prog-detail {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 7px 12px;
+  }
+  .prog-section {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
+  .prog-label {
+    font-size: 10.5px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 1px;
+  }
+  .prog-measures {
+    display: flex;            /* 改流式布局：小节按内容自动定宽，密集小节自然变宽 */
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 0;
+    border-radius: 6px;
+    overflow: visible;
+    border: 1px solid rgba(88,166,255,0.2);
+    background: rgba(88,166,255,0.06);
+    margin-top: 1px;
+  }
+  .measure {
+    flex: 0 1 auto;           /* 宽度由内容决定（不强制等宽），容器过窄才收缩 */
+    min-width: 120px;         /* 下限：极简小节不至于被压成一条 */
+    padding: 2px 4px 0;   /* 底部留白归零：歌词栏紧贴下方虚线边界 */
+    border-bottom: 1px dashed rgba(63,185,80,0.3);
+    text-align: center;
+    display: flex;
+    flex-direction: column;   /* 拍格区在上，歌词区在下 */
+    align-items: stretch;
+  }
+  .measure-beats {
+    display: flex;            /* 和弦拍格横向排列（保持原样） */
+    align-items: stretch;
+    border-right: 1px dashed rgba(88,166,255,0.15);  /* 上下两区同用虚线，视觉连续 */
+  }
+  .beat {
+    flex: 1 1 auto;
+    min-width: max-content;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 1px 3px;
+    white-space: nowrap;
+  }
+  .beat.has-chord .measure-num { color: var(--accent); }
+  /* 空拍休止标记 "-"：弱化显示，区别于实际和弦 */
+  .measure-chord.rest-mark {
+    color: rgba(139,148,158,0.5);
+    font-weight: 400;
+  }
+  .measure-num {
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 1.5px;
+    line-height: 0.9;
+  }
+  .measure-num small {
+    font-size: 0.65em;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+  }
+  .measure-chord {
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 14px;
+    font-weight: 600;
+    color: #3fb950;
+    letter-spacing: 1px;
+    line-height: 0.9;
+    margin-top: 0;
+  }
+  .measure-chord small {
+    font-size: 0.7em;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+  }
+  .prog-num.none {
+    color: var(--text-dim);
+    background: transparent;
+    border: 1px dashed rgba(255,255,255,0.15);
+    font-weight: 400;
+    font-size: 13px;
+    letter-spacing: 0;
+  }
+  .prog-empty {
+    color: var(--text-dim);
+    font-size: 13px;
+  }
+  .back-top-btn {
+    position: absolute;
+    top: 10px;
+    right: 14px;
+    background: rgba(88,166,255,0.12);
+    border: 1px solid rgba(88,166,255,0.25);
+    color: var(--accent);
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    z-index: 5;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .back-top-btn:hover {
+    background: rgba(88,166,255,0.22);
+    border-color: var(--accent);
+  }
+  .ref-panel {
+    border-top: 1px solid var(--border);
+    background: var(--bg);
+  }
+  .ref-panel.open {
+  }
+  .ref-panel-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    cursor: pointer;
+    user-select: none;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-dim);
+    transition: background 0.15s;
+  }
+  .ref-panel-toggle:hover {
+    background: var(--surface-hover);
+    color: var(--text);
+  }
+  .ref-panel-toggle .arrow {
+    transition: transform 0.2s;
+    display: inline-block;
+  }
+  .ref-panel.open .ref-panel-toggle .arrow {
+    transform: rotate(90deg);
+  }
+  .ref-panel-body {
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height 0.25s ease;
+  }
+  .ref-panel.open .ref-panel-body {
+    max-height: 1200px;
+    padding: 10px 16px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  /* ===== 和弦对照表：编辑模式（增加 / 排序和弦进行模块） ===== */
+  .ref-panel-actions {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 16px 0;
+    font-size: 12px;
+  }
+  .ref-panel.open .ref-panel-actions { display: flex; }
+  .ref-edit-btn {
+    padding: 3px 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: rgba(255,255,255,0.04);
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.15s;
+  }
+  .ref-edit-btn:hover { border-color: var(--accent); color: var(--text); }
+  .ref-edit-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .ref-edit-hint { color: var(--text-dim); }
+  /* 编辑模式下的和弦进行模块卡片 */
+  .ref-panel-body .prog-section.ref-edit {
+    flex: 0 0 auto;
+    min-width: 200px;
+    max-width: 260px;
+    background: rgba(88,166,255,0.06);
+    border: 1px solid rgba(88,166,255,0.28);
+    border-radius: 8px;
+    padding: 8px;
+    gap: 4px;
+  }
+  .ref-panel-body .prog-section.ref-edit .edit-chords { font-size: 14px; padding: 6px 8px; }
+  .ref-preview {
+    font-family: 'Consolas','Monaco', monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+    letter-spacing: 0.5px;
+    word-break: break-all;
+    line-height: 1.5;
+  }
+  .ref-add { flex: 0 0 100%; margin-top: 2px; }
+  .ref-add .btn { font-size: 13px; }
+
+  /* ===== Tab 标签栏 ===== */
+
+  .tab-btn {
+    padding: 5px 12px;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-dim);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    user-select: none;
+    margin-bottom: -1px;
+  }
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+  .tab-count {
+    background: rgba(88,166,255,0.15);
+    color: var(--accent);
+    font-size: 10px;
+    padding: 0px 6px;
+    border-radius: 8px;
+    font-weight: 600;
+    min-width: 18px;
+    text-align: center;
+  }
+  .tab-btn:not(.active) .tab-count {
+    background: rgba(139,148,158,0.15);
+    color: var(--text-dim);
+  }
+
+  /* ===== 操作列（+/-） ===== */
+  .col-action { width: 50px; text-align: center; }
+  thead th.col-action { cursor: default; }
+  thead th.col-action:hover { color: var(--text-dim); }
+  .action-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-dim);
+    font-size: 18px;
+    cursor: pointer;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    padding: 0;
+  }
+  .action-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(88,166,255,0.1);
+  }
+  .action-btn.remove:hover {
+    border-color: #f85149;
+    color: #f85149;
+    background: rgba(248,81,73,0.1);
+  }
+  .action-btn.added {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(88,166,255,0.15);
+    cursor: default;
+  }
+  .action-btn.added:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(88,166,255,0.15);
+  }
+
+  /* 临时歌单空状态 */
+  .empty-temp {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-dim);
+  }
+  .empty-temp .empty-icon {
+    font-size: 56px;
+    margin-bottom: 12px;
+    opacity: 0.35;
+  }
+  .empty-temp .empty-text {
+    font-size: 15px;
+    margin-bottom: 4px;
+  }
+  .empty-temp .empty-hint {
+    font-size: 12px;
+    opacity: 0.6;
+  }
+  .song-row.pinned-row {
+    background: rgba(88,166,255,0.06);
+  }
+  .song-row.pinned-row:hover {
+    background: rgba(88,166,255,0.12);
+  }
+  .pinned-tag {
+    display: inline-block;
+    font-size: 10px;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    border-radius: 4px;
+    padding: 0 4px;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+  .key-bar {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 0;
+    align-items: stretch;
+    margin-top: 4px;
+    padding-bottom: 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .key-bar-label {
+    font-size: 14px;
+    color: var(--text-dim);
+    white-space: nowrap;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    padding-right: 6px;
+  }
+  .key-btn {
+    border-radius: 0;
+    border-left: none;
+  }
+  .key-btn:first-of-type {
+    border-left: 1px solid var(--border);
+    border-radius: 6px 0 0 6px;
+  }
+  .key-btn:last-of-type {
+    border-radius: 0 6px 6px 0;
+  }
+  .key-btn {
+    flex: 1 1 0;
+    padding: 6px 0;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.15s;
+    font-family: 'Consolas', 'Monaco', monospace;
+    text-align: center;
+    user-select: none;
+  }
+  .key-btn:hover {
+    border-color: var(--accent);
+    background: rgba(255,255,255,0.07);
+  }
+  .key-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    font-weight: 600;
+    box-shadow: 0 0 12px rgba(88,166,255,0.4);
+  }
+  .key-btn.key-orig {
+    font-family: -apple-system, 'PingFang SC', 'Noto Sans CJK SC', 'Source Han Sans SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+  }
+  .key-btn .orig-tag {
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-left: 3px;
+    font-weight: 400;
+    opacity: 0.8;
+  }
+  .key-btn.active .orig-tag {
+    color: #fff;
+    opacity: 0.85;
+  }
+  /* ===== 每小节歌词区（宽度与和弦小节一致；小节间用虚线分割，连成一条连续歌词行） ===== */
+  .measure-lyrics {
+    margin-top: 1px;
+  }
+  .lyrics-input {
+    display: block;   /* 消除 inline-block 在歌词 div 内产生的 3px 基线缝隙，让歌词栏底部真正贴边界 */
+    width: 100%;
+    padding: 3px 6px 0;   /* 底部留白归零：歌词栏下方紧贴边界 */
+    background: transparent;
+    border: none;
+    border-left: 1px dashed rgba(88,166,255,0.15);  /* 与和弦小节分割线同色虚线 */
+    border-right: 1px dashed rgba(88,166,255,0.15);
+    border-radius: 0;
+    color: rgba(240,246,252,0.88);
+    font-size: 14px;
+    font-weight: 500;
+    font-family: -apple-system, 'PingFang SC', 'Noto Sans CJK SC', 'Source Han Sans SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+    outline: none;
+    transition: background 0.2s;
+    line-height: 1.4;
+    resize: none;
+    overflow: hidden;
+    min-height: 22px;   /* 紧贴：去掉空行多出的 2px 框内留白，与下方边界齐 */
+    box-sizing: border-box;
+    text-align: left;
+  }
+  .lyrics-input:focus {
+    background: rgba(88,166,255,0.08);
+  }
+  .lyrics-input::placeholder {
+    color: var(--text-dim);
+    opacity: 0.4;
+    font-size: 10px;
+  }
+  @media (max-width: 700px) {
+    .prog-detail { flex-direction: column; }
+    .prog-section { min-width: auto; }
+    .prog-measures { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .measure:nth-child(2n) { border-right: none; }
+  }
+
+/* ===== 升级：节拍器 / 和弦提示 / 拖拽（精简版） ===== */
+.bpm-link { color:var(--accent); cursor:pointer; border-bottom:1px dashed var(--accent); }
+.bpm-link:hover { opacity:.8; }
+
+/* 拖拽排序 */
+.song-row.dragging { opacity:.4; }
+.song-row.drag-over { box-shadow: inset 0 2px 0 var(--accent); background: rgba(88,166,255,.10); }
+.song-row[draggable="true"] { cursor:grab; }
+.song-row[draggable="true"]:active { cursor:grabbing; }
+
+/* 节拍器 */
+.metro { position:fixed; right:18px; bottom:18px; width:244px; background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:14px; z-index:200; box-shadow:0 12px 40px rgba(0,0,0,.5); }
+.metro-head { display:flex; justify-content:space-between; align-items:center; font-size:13px; color:var(--text); margin-bottom:8px; }
+.metro-x { background:transparent; border:none; color:var(--text-dim); font-size:18px; cursor:pointer; line-height:1; }
+.metro-x:hover { color:var(--text); }
+.metro-bpm { text-align:center; font-size:30px; font-weight:700; color:var(--accent); font-family:'Consolas','Monaco',monospace; }
+.metro-bpm input[type=number] { width:80px; text-align:center; font-size:30px; font-weight:700; color:var(--accent); font-family:'Consolas','Monaco',monospace; background:transparent; border:1px solid var(--border); border-radius:6px; outline:none; -moz-appearance:textfield; }
+.metro-bpm input[type=number]::-webkit-inner-spin-button, .metro-bpm input[type=number]::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
+.metro-bpm input[type=number]:focus { border-color:var(--accent); }
+.metro-bpm small { font-size:12px; color:var(--text-dim); font-weight:400; }
+.metro input[type=range]{ width:100%; margin:8px 0; accent-color:var(--accent); }
+.metro-vol { display:flex; align-items:center; gap:8px; margin:2px 0 2px; font-size:12px; color:var(--text-dim); }
+.metro-vol-label { white-space:nowrap; }
+.metro-vol input[type=range] { flex:1; margin:0; accent-color:var(--accent); }
+.metro-vol-val { min-width:40px; text-align:right; color:var(--text); font-family:'Consolas','Monaco',monospace; font-weight:700; }
+.metro-meter { margin:6px 0 4px; }
+.metro-meter-label { font-size:11px; color:var(--text-dim); margin-bottom:5px; line-height:1.5; }
+.metro-meter-row { display:flex; flex-direction:column; gap:6px; }
+#metroMeter { width:100%; padding:6px 10px; background:var(--bg); border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:15px; font-family:'Consolas',monospace; text-align:center; outline:none; }
+#metroMeter:focus { border-color:var(--accent); }
+.metro-presets { display:flex; flex-wrap:wrap; gap:4px; }
+.metro-presets button { flex:1 1 30%; min-width:34px; padding:4px 0; background:var(--bg); border:1px solid var(--border); border-radius:6px; color:var(--text-dim); font-size:11px; cursor:pointer; font-family:'Consolas',monospace; transition:all .15s; }
+.metro-presets button:hover { border-color:var(--accent); color:var(--text); }
+.metro-presets button.active { background:var(--accent-dim); border-color:var(--accent); color:#fff; }
+.metro-ctrl { display:flex; gap:8px; margin-top:8px; }
+.metro-ctrl button { flex:1; padding:7px; border-radius:8px; border:1px solid var(--border); background:var(--accent-dim); color:#fff; cursor:pointer; font-size:13px; }
+.metro-ctrl button.outline { background:transparent; color:var(--text-dim); }
+.metro-ctrl button:hover { opacity:.85; }
+.metro-beat { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; margin-top:10px; min-height:16px; }
+.bdot { width:12px; height:12px; border-radius:50%; background:var(--text-dim); opacity:.4; transition:transform .08s, background .08s, opacity .08s; }
+.bdot.b-strong { background:var(--accent); width:15px; height:15px; opacity:.95; }
+.bdot.b-mid { background:#d29922; opacity:.7; }
+.bdot.cur { transform:scale(1.5); opacity:1; box-shadow:0 0 10px var(--accent); }
+
+/* 导出修改弹窗 */
+.export-mask { position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:500; display:none; align-items:center; justify-content:center; padding:20px; }
+.export-mask.open { display:flex; }
+.export-box { width:100%; max-width:640px; max-height:86vh; display:flex; flex-direction:column; background:var(--surface); border:1px solid var(--border); border-radius:14px; box-shadow:0 20px 60px rgba(0,0,0,.55); overflow:hidden; }
+.export-head { display:flex; justify-content:space-between; align-items:center; padding:14px 18px; border-bottom:1px solid var(--border); font-size:15px; font-weight:600; color:var(--text); }
+.export-x { background:transparent; border:none; color:var(--text-dim); font-size:22px; cursor:pointer; line-height:1; }
+.export-x:hover { color:var(--text); }
+.export-hint { padding:10px 18px 0; font-size:12px; color:var(--text-dim); line-height:1.6; }
+.export-hint b { color:var(--accent); }
+.export-ta { flex:1; min-height:200px; margin:10px 18px; padding:12px; background:var(--bg); border:1px solid var(--border); border-radius:10px; color:var(--text); font-family:'Consolas','Monaco',monospace; font-size:12px; line-height:1.55; resize:none; outline:none; white-space:pre; overflow:auto; }
+.export-ta:focus { border-color:var(--accent); }
+.export-actions { display:flex; gap:10px; padding:0 18px 16px; }
+.export-actions .btn { flex:1; padding:9px; border-radius:9px; font-size:14px; cursor:pointer; }
+.export-actions .btn.primary { background:var(--accent-dim); color:#fff; border:1px solid var(--accent); }
+.export-actions .btn.outline { background:transparent; color:var(--text); border:1px solid var(--border); }
+.export-actions .btn:hover { opacity:.88; }
+.export-actions .btn.ok { background:#238636; border-color:#238636; color:#fff; }
+
+/* GitHub 直接保存区 */
+.save-github { margin:0 18px 16px; padding-top:14px; border-top:1px solid var(--border); display:flex; flex-direction:column; gap:10px; }
+.save-row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.gh-token { flex:1 1 auto; min-width:160px; padding:8px 10px; background:var(--bg); border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:13px; outline:none; }
+.gh-token:focus { border-color:var(--accent); }
+.gh-remember { font-size:12px; color:var(--text-dim); display:flex; align-items:center; gap:4px; cursor:pointer; white-space:nowrap; }
+.gh-status { font-size:12px; color:var(--text-dim); }
+
+/* 新增歌曲弹窗表单（复用 export-mask / export-box / gh-token 骨架） */
+.add-form { display:flex; flex-direction:column; gap:12px; padding:14px 18px 16px; }
+.add-row { display:flex; gap:10px; flex-wrap:wrap; }
+.add-field { flex:1; min-width:86px; display:flex; flex-direction:column; gap:5px; font-size:12px; color:var(--text-dim); }
+.add-field .gh-token { width:100%; min-width:0; box-sizing:border-box; }
+select.gh-token { appearance:auto; cursor:pointer; }
+
+/* 和弦悬浮提示 */
+.chord-tip { position:fixed; display:none; z-index:300; background:var(--surface); border:1px solid var(--accent); border-radius:10px; padding:8px 12px; box-shadow:0 8px 28px rgba(0,0,0,.5); pointer-events:none; max-width:190px; }
+.ct-name { font-size:16px; font-weight:700; color:var(--accent); font-family:'Consolas','Monaco',monospace; }
+.ct-label { font-size:11px; color:var(--text-dim); margin:2px 0; }
+.ct-notes { font-size:12px; color:var(--text); letter-spacing:1px; }
+
+/* 跟随浏览器配色（浅色模式） */
+@media (prefers-color-scheme: light) {
+  :root { --bg:#f4f6f8; --surface:#ffffff; --surface-hover:#eef2f6; --border:#d8dee4; --text:#1f2328; --text-dim:#626b75; --accent:#1f6feb; --accent-dim:#1f6feb; }
+  .ref-panel { background:#fafbfc; }
+  .search-box input { background:#fff; }
+  .key-btn { background:rgba(0,0,0,.03); color:var(--text); }
+  .measure { background:rgba(31,111,235,.05); }
+}
+
+/* ===== iPad Air 5（10.9" 1640×2360）视奏优化 ===== */
+/* 横屏（≤1180px）：和弦展开页最大化 */
+@media (max-width: 1180px) {
+  .toolbar { padding: 6px 14px; }
+  .table-wrap { padding: 0 16px 36px; max-width: none; }
+
+  /* 歌单列表：行高加大，手指触控友好 */
+  tbody td { padding: 10px 14px; }
+  thead th { padding: 10px 14px; font-size: 13px; }
+  .col-id { width: 56px; }
+  .col-key { width: 90px; }
+  .key-badge { padding: 3px 12px; font-size: 14px; }
+
+  /* 和弦展开页 */
+  .prog-detail { padding: 10px 16px; gap: 14px; }
+  .prog-section { min-width: 140px; }
+  .prog-label { font-size: 15px; font-weight: 700; }
+  .measure { padding: 2px 10px 0; }   /* 底部留白归零：歌词栏紧贴下方虚线边界 */
+  .measure-num { font-size: 22px; }
+  .measure-chord { font-size: 20px; }
+  .measure-chord small { font-size: 0.72em; }
+
+  /* 小节网格：自适应，每个小节最小 140px */
+  .prog-measures { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+
+  /* 详情栏 */
+  .detail-bar { padding: 6px 12px; }
+  .detail-name { font-size: 22px; }
+  .dm-chip { font-size: 15px; padding: 4px 14px; }
+  .detail-close { font-size: 15px; padding: 8px 16px; }
+  .detail-body { padding: 12px 18px 32px; }
+}
+/* 竖屏（≤820px）：iPad Air 5 竖屏视奏模式 */
+@media (max-width: 820px) {
+  .toolbar-top { flex-wrap: wrap; gap: 4px; }
+  .search-box { min-width: 120px; }
+  .key-bar { gap: 3px; margin-top: 4px; }
+  .key-btn { padding: 8px 0; font-size: 16px; }
+
+  /* 歌单列表竖屏 */
+  tbody td { padding: 8px 10px; }
+  thead th { padding: 8px 10px; }
+  table { font-size: 15px; }
+
+  /* 和弦展开：竖屏视奏核心——尽可能大 */
+  .prog-detail { padding: 8px 10px; gap: 16px; }
+  .prog-section { min-width: auto; }
+  .prog-label { font-size: 16px; font-weight: 700; }
+  .prog-measures { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+  .measure-num { font-size: 26px; letter-spacing: 2px; }
+  .measure-chord { font-size: 24px; letter-spacing: 1.5px; }
+  .measure { padding: 3px 10px 0; }   /* 底部留白归零：歌词栏紧贴下方虚线边界 */
+  .beat { padding: 2px 4px; }
+  .measure-num small { font-size: 0.62em; }
+  .measure-chord small { font-size: 0.7em; }
+
+  /* 详情栏竖屏：单行极致紧凑 */
+  .detail-bar { padding: 3px 6px; gap: 4px; flex-wrap: nowrap; align-items: center; }
+  .detail-title { flex-direction: row; align-items: center; gap: 8px; min-width: 0; flex: 1 1 auto; overflow: hidden; }
+  .detail-name { font-size: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .detail-meta { gap: 3px; flex-wrap: nowrap; }
+  .dm-chip { font-size: 11px; padding: 2px 6px; }
+  .dm-chip i { font-size: 10px; }
+  .dm-chip b { font-size: 12px; font-weight: 700; }
+  .detail-actions { gap: 3px; flex-shrink: 0; }
+  .detail-actions .btn { padding: 3px 6px; font-size: 12px; border-radius: 5px; }
+  .detail-close { font-size: 10px; padding: 3px 6px; }
+  .detail-body { padding: 8px 10px 60px; }
+  .detail-body .prog-label { font-size: 20px; }
+  .detail-body .prog-measures { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+  .detail-body .measure-num { font-size: 36px; }
+  .detail-body .measure-chord { font-size: 34px; }
+
+  .back-top-btn { padding: 5px 12px; font-size: 13px; }
+}
+
+/* ===== 编辑模式（直接修改字母和弦） ===== */
+.edit-chords {
+  width: 100%;
+  box-sizing: border-box;
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  line-height: 1.7;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(88,166,255,0.45);
+  background: rgba(88,166,255,0.1);
+  color: inherit;
+  resize: vertical;
+}
+.edit-chords:focus {
+  outline: none;
+  border-color: #3fb950;
+  background: rgba(63,185,80,0.12);
+}
+.prog-section.edit { gap: 4px; }
+.sec-edit-head { display: flex; align-items: center; gap: 6px; }
+.section-label-input {
+  flex: 1 1 auto;
+  width: auto;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  background: rgba(88,166,255,0.1);
+  border: 1px solid rgba(88,166,255,0.4);
+  border-radius: 6px;
+  padding: 3px 8px;
+  outline: none;
+}
+.section-label-input:focus { border-color: #3fb950; background: rgba(63,185,80,0.12); }
+/* 拖拽排序手柄 */
+.section-drag {
+  flex: 0 0 auto;
+  color: var(--text-dim);
+  font-size: 18px;
+  cursor: grab;
+  padding: 2px 6px;
+  border-radius: 4px;
+  user-select: none;
+  line-height: 1;
+}
+.section-drag:active { cursor: grabbing; }
+.section-drag:hover { color: var(--text); background: rgba(255,255,255,0.08); }
+.prog-section.edit { position: relative; transition: transform 0.15s, box-shadow 0.15s; }
+.prog-section.drag-over {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 0 #3fb950;
+}
+.prog-section.dragging { opacity: 0.4; }
+.section-del {
+  flex: 0 0 auto;
+  background: transparent;
+  border: 1px solid rgba(248,81,73,0.4);
+  color: #f85149;
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.section-del:hover { background: rgba(248,81,73,0.15); }
+.add-section { margin-top: 4px; }
+.add-section .btn { font-size: 13px; }
+.edit-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed rgba(88,166,255,0.3);
+}
+.edit-hint { font-size: 12px; opacity: 0.65; }
+.btn.primary { background: #238636; border-color: #238636; color: #fff; }
+.btn.primary:hover { background: #2ea043; }
+.btn.active { background: rgba(63,185,80,0.18); border-color: #3fb950; color: #3fb950; font-weight: 600; }
+/* iPad：编辑框放大，便于触控输入 */
+@media (max-width: 1080px) {
+  .edit-chords { font-size: 18px; padding: 10px 12px; }
+}
+@media (max-width: 820px) {
+  .edit-chords { font-size: 19px; padding: 12px; }
+  .edit-actions { gap: 8px; }
+}
+
+/* ===== 展开和弦：铺满锁定行以下的全屏详情区 ===== */
+.detail-view { display: none; }
+.detail-view.open {
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  top: 0;                 /* 实际 top 由 JS 设为锁定行底部 */
+  z-index: 60;
+  background: var(--bg);
+}
+
+  .detail-bar {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 6px 12px;
+    border-bottom: 1px solid rgba(88,166,255,0.18);
+    background: var(--bg);
+    flex-wrap: nowrap;
+  }
+  .detail-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 0 0 auto;
+  }
+  .detail-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    overflow: hidden;
+    flex: 1 1 auto;
+  }
+  .detail-name {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+    flex: 0 1 auto;
+  }
+  .detail-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 0 0 auto;
+    flex-wrap: wrap;
+  }
+  .dm-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 16px;
+    color: var(--text-dim);
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 999px;
+    padding: 3px 11px;
+    white-space: nowrap;
+  }
+  .dm-chip i { font-style: normal; opacity: 0.7; }
+  .dm-chip b {
+    font-weight: 600;
+    color: var(--accent);
+    font-family: 'Consolas', 'Monaco', monospace;
+  }
+  /* 编辑模式：元信息可输入 */
+  .detail-meta.edit-meta { gap: 10px; align-items: center; flex-wrap: wrap; }
+  .dm-edit {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+    color: var(--text-dim);
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 6px;
+    padding: 3px 8px;
+  }
+  .dm-edit label { font-style: normal; opacity: 0.7; white-space: nowrap; }
+  .dm-edit select, .dm-edit input {
+    background: rgba(0,0,0,0.25);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: var(--text);
+    border-radius: 4px;
+    padding: 2px 5px;
+    font-size: 13px;
+    font-family: 'Consolas', 'Monaco', monospace;
+    min-width: 42px;
+  }
+  .dm-edit input#meta-bpm-1, .dm-edit input#meta-ts-1 { min-width: 60px; }
+  .dm-edit select:focus, .dm-edit input:focus { border-color: var(--accent); outline: none; }
+  .detail-close {
+    flex: 0 0 auto;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 7px 14px;
+    border-radius: 8px;
+    border: 1px solid rgba(248,81,73,0.5);
+    background: rgba(248,81,73,0.12);
+    color: #f85149;
+    cursor: pointer;
+  }
+  .detail-close:hover { background: rgba(248,81,73,0.22); }
+  .detail-body {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 8px 12px 48px;
+  }
+  /* 详情区内和弦：每段（主歌/副歌…）独立一行，视奏大字体 */
+  .detail-body .prog-detail { padding: 6px 0; gap: 0; }
+  .detail-body .prog-section { gap: 6px; }
+  .detail-body .prog-label { font-size: 18px; font-weight: 700; }
+  .detail-body .prog-measures { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+  .detail-body .measure { padding: 4px 12px 0; }   /* 底部留白归零：歌词栏紧贴边界 */
+  .detail-body .measure-num { font-size: 30px; }
+  .detail-body .measure-chord { font-size: 28px; }
+
+
+/* ============================================================
+   联想小新 Pad Pro 12.7 (TB375FC) 跑场视奏适配
+   仅优化配色与字体：高对比、远距可读、减舞台眩光，不动布局/UI
+   命中：高像素密度平板（横屏≈1472 / 竖屏≈920 CSS px, dpr≈2）；
+        另含 1400–1600px 宽屏条件，方便桌面浏览器拉宽窗口预览
+   ============================================================ */
+@media (min-resolution: 1.5dppx) and (min-width: 800px) and (max-width: 1600px),
+       (min-width: 1400px) and (max-width: 1600px),
+       (min-width: 820px) and (max-width: 1000px) {
+  :root {
+    --bg: #06090d;            /* 更暗，降低舞台灯光下屏幕眩光 */
+    --surface: #0f141b;
+    --surface-hover: #161d27;
+    --border: #28313d;
+    --text: #f2f7ff;          /* 更亮的近白，提整体对比 */
+    --text-dim: #98a4b1;
+    --accent: #79d2ff;        /* 小节号更亮，便于快速定位 */
+    /* 和弦配色整体提亮，舞台一眼可辨 */
+    --key-C: #6db3ff;  --key-G: #4ee36a;  --key-Am: #ffc857;
+    --key-D: #c79bff;   --key-Em: #ff7b72;  --key-F: #5fe0ea;
+    --key-Bm: #ffd965;  --key-A: #ff9ccf;   --key-E: #ff8585;
+    --key-Dm: #6fe6dc;  --key-other: #98a4b1;
+  }
+
+  /* 措施内和弦：跑场时真正盯着读的元素 —— 提亮、加重、加描边 */
+  .measure-chord {
+    color: #5cff7a;           /* 比原 #3fb950 更亮更跳 */
+    font-weight: 700;
+    font-size: 17px;
+    text-shadow: 0 0 1px rgba(0,0,0,0.55);
+  }
+  .measure-num {
+    color: var(--accent);
+    font-weight: 800;
+    font-size: 18px;
+  }
+
+  /* 详情视奏视图：和弦/小节号/歌词显著放大，远距可读 */
+  .detail-body .measure-chord { font-size: 36px; font-weight: 700; }
+  .detail-body .measure-num   { font-size: 32px; font-weight: 800; }
+  .lyrics-input { font-size: 18px; font-weight: 600; }
+
+  /* 和弦对照表展开：与歌曲展开和弦页保持一致的视觉（大字体/高对比/远距可读） */
+  .ref-panel-body .prog-section { gap: 6px; }
+  .ref-panel-body .prog-label { font-size: 18px; font-weight: 700; }
+  .ref-panel-body .prog-measures { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+  .ref-panel-body .measure { padding: 4px 12px 0; }
+  .ref-panel-body .measure-chord { font-size: 36px; font-weight: 700; }
+  .ref-panel-body .measure-num   { font-size: 32px; font-weight: 800; }
+
+  /* 歌单/工具栏内和弦标签随新配色提亮（key-* 类用 var 自动生效） */
+  .key-badge { font-weight: 600; }
+}
+
+
+/* ===== 全屏悬浮按钮（右下角，安全区避让） ===== */
+.fs-btn {
+  position: fixed;
+  right: max(14px, env(safe-area-inset-right));
+  bottom: max(14px, env(safe-area-inset-bottom));
+  z-index: 60;
+  width: 46px;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border, #28313d);
+  border-radius: 50%;
+  background: rgba(15, 20, 27, 0.72);
+  color: var(--accent, #79d2ff);
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
+  transition: transform .12s ease, background .12s ease;
+}
+.fs-btn:hover { background: rgba(22, 29, 39, 0.9); }
+.fs-btn:active { transform: scale(0.94); }
+.fs-btn svg { display: block; }
+/* 进入全屏后让按钮更隐蔽，避免遮挡谱面 */
+:fullscreen .fs-btn { opacity: 0.35; }
+:-webkit-full-screen .fs-btn { opacity: 0.35; }
+.fs-btn:hover { opacity: 1; }

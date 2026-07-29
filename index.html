@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<!-- saved from url=(0072)https://webview.e2b.sh4.sandbox.cloudstudio.club/%E6%AD%8C%E5%8D%95.html -->
+<html lang="zh-CN"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>工作歌单 v4.1</title>
+<meta name="theme-color" content="#06090d">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="toolbar-top">
+    <button class="tab-btn active" id="tab-main" onclick="switchTab(&#39;main&#39;)">
+      <span>📋 工作歌单</span>
+      <span class="tab-count" id="count-main">305</span>
+    </button>
+    <button class="tab-btn" id="tab-temp" onclick="switchTab(&#39;temp&#39;)">
+      <span>⭐ 临时歌单</span>
+      <span class="tab-count" id="count-temp">8</span>
+    </button>
+    <div class="search-box">
+      <span class="icon">🔍</span>
+      <input type="text" id="search" placeholder="搜索…" autocomplete="off">
+      <button class="search-btn" id="searchClear" title="清除" onclick="clearSearch()">×</button>
+    </div>
+    <button class="btn outline" title="节拍器" onclick="toggleMetronome()"><span>🎵</span><span>节拍器</span></button>
+    <button class="btn outline" title="手动新增歌曲" onclick="openAddModal()"><span>＋</span><span>新增歌曲</span></button>
+    <button class="btn outline" title="导出修改 / 保存到GitHub" onclick="openExportModal()"><span>📤</span><span>保存到GitHub</span></button>
+  </div>
+  <div class="key-bar">
+    <span class="key-bar-label">🎼</span>
+    <button class="key-btn active" data-key="C" data-label="C" onclick="changeTransposeKey(&#39;C&#39;, this)">C</button>
+    <button class="key-btn" data-key="Db" data-label="Db" onclick="changeTransposeKey(&#39;Db&#39;, this)">D♭</button>
+    <button class="key-btn" data-key="D" data-label="D" onclick="changeTransposeKey(&#39;D&#39;, this)">D</button>
+    <button class="key-btn" data-key="Eb" data-label="Eb" onclick="changeTransposeKey(&#39;Eb&#39;, this)">E♭</button>
+    <button class="key-btn" data-key="E" data-label="E" onclick="changeTransposeKey(&#39;E&#39;, this)">E</button>
+    <button class="key-btn" data-key="F" data-label="F" onclick="changeTransposeKey(&#39;F&#39;, this)">F</button>
+    <button class="key-btn" data-key="Gb" data-label="Gb" onclick="changeTransposeKey(&#39;Gb&#39;, this)">G♭</button>
+    <button class="key-btn" data-key="G" data-label="G" onclick="changeTransposeKey(&#39;G&#39;, this)">G</button>
+    <button class="key-btn" data-key="Ab" data-label="Ab" onclick="changeTransposeKey(&#39;Ab&#39;, this)">A♭</button>
+    <button class="key-btn" data-key="A" data-label="A" onclick="changeTransposeKey(&#39;A&#39;, this)">A</button>
+    <button class="key-btn" data-key="Bb" data-label="Bb" onclick="changeTransposeKey(&#39;Bb&#39;, this)">B♭</button>
+    <button class="key-btn" data-key="B" data-label="B" onclick="changeTransposeKey(&#39;B&#39;, this)">B</button>
+  </div>
+  <div class="ref-panel" id="refPanel">
+    <div class="ref-panel-toggle" onclick="toggleRefPanel()">
+      <span class="arrow">▶</span>
+      <span>📖 和弦对照表（常用进行 · 随转调同步）</span>
+    </div>
+    <div class="ref-panel-actions" id="refPanelActions">
+      <button class="ref-edit-btn" id="refEditBtn" onclick="toggleRefEditMode(event)">✏️ 编辑</button>
+      <span class="ref-edit-hint" id="refEditHint"></span>
+    </div>
+    <div class="ref-panel-body" id="refPanelBody"><div class="prog-section"><span class="prog-label">顺阶七级</span><div class="prog-measures"><div class="measure"><div class="beat has-chord"><div class="measure-num">1</div><div class="measure-chord">C</div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">2</div><div class="measure-chord">D<small>m</small></div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">3</div><div class="measure-chord">E<small>m</small></div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">4</div><div class="measure-chord">F</div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">5</div><div class="measure-chord">G</div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">6</div><div class="measure-chord">A<small>m</small></div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">b1<small>dim</small></div><div class="measure-chord">B<small>dim</small></div></div></div></div></div><div class="prog-section"><span class="prog-label">流行卡农进行</span><div class="prog-measures"><div class="measure"><div class="beat has-chord"><div class="measure-num">1</div><div class="measure-chord">C</div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">5</div><div class="measure-chord">G</div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">6</div><div class="measure-chord">A<small>m</small></div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">3</div><div class="measure-chord">E<small>m</small></div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">4</div><div class="measure-chord">F</div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">1</div><div class="measure-chord">C</div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">2</div><div class="measure-chord">D<small>m</small></div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">5</div><div class="measure-chord">G</div></div></div></div></div><div class="prog-section"><span class="prog-label">万能抒情变体</span><div class="prog-measures"><div class="measure"><div class="beat has-chord"><div class="measure-num">4</div><div class="measure-chord">F</div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">5</div><div class="measure-chord">G</div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">3</div><div class="measure-chord">E<small>m</small></div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">6</div><div class="measure-chord">A<small>m</small></div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">2</div><div class="measure-chord">D<small>m</small></div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">5</div><div class="measure-chord">G</div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">1</div><div class="measure-chord">C</div></div></div></div></div><div class="prog-section"><span class="prog-label">标准 456 进行</span><div class="prog-measures"><div class="measure"><div class="beat has-chord"><div class="measure-num">4</div><div class="measure-chord">F</div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">5</div><div class="measure-chord">G</div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">6</div><div class="measure-chord">A<small>m</small></div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">6</div><div class="measure-chord">A<small>m</small></div></div></div></div></div><div class="prog-section"><span class="prog-label">延伸版 4561 进行</span><div class="prog-measures"><div class="measure"><div class="beat has-chord"><div class="measure-num">4</div><div class="measure-chord">F</div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">5</div><div class="measure-chord">G</div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">6</div><div class="measure-chord">A<small>m</small></div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">1</div><div class="measure-chord">C</div></div></div></div></div><div class="prog-section"><span class="prog-label">4536 变体（斜线和弦）</span><div class="prog-measures"><div class="measure"><div class="beat has-chord"><div class="measure-num">4</div><div class="measure-chord">F</div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">5/4</div><div class="measure-chord">G/F</div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">3</div><div class="measure-chord">E<small>m</small></div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">6</div><div class="measure-chord">A<small>m</small></div></div></div></div></div><div class="prog-section"><span class="prog-label">五度循环进行</span><div class="prog-measures"><div class="measure"><div class="beat has-chord"><div class="measure-num">2</div><div class="measure-chord">D<small>m</small></div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">5</div><div class="measure-chord">G</div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">1</div><div class="measure-chord">C</div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">4</div><div class="measure-chord">F</div></div></div></div></div><div class="prog-section"><span class="prog-label">小调顺阶下行 1</span><div class="prog-measures"><div class="measure"><div class="beat has-chord"><div class="measure-num">6</div><div class="measure-chord">A<small>m</small></div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">5</div><div class="measure-chord">G</div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">4</div><div class="measure-chord">F</div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">3</div><div class="measure-chord">E<small>m</small></div></div></div></div></div><div class="prog-section"><span class="prog-label">小调顺阶下行 2</span><div class="prog-measures"><div class="measure"><div class="beat has-chord"><div class="measure-num">6</div><div class="measure-chord">A<small>m</small></div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">5</div><div class="measure-chord">G</div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">4</div><div class="measure-chord">F</div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">1</div><div class="measure-chord">C</div></div></div></div></div><div class="prog-section"><span class="prog-label">现代流行、欧美影响</span><div class="prog-measures"><div class="measure"><div class="beat has-chord"><div class="measure-num">6</div><div class="measure-chord">A<small>m</small></div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">4</div><div class="measure-chord">F</div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">1</div><div class="measure-chord">C</div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">5</div><div class="measure-chord">G</div></div></div></div></div><div class="prog-section"><span class="prog-label">老派流行、校园民谣</span><div class="prog-measures"><div class="measure"><div class="beat has-chord"><div class="measure-num">1</div><div class="measure-chord">C</div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">6</div><div class="measure-chord">A<small>m</small></div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">4</div><div class="measure-chord">F</div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">5</div><div class="measure-chord">G</div></div></div></div></div><div class="prog-section"><span class="prog-label">爵士味、经典流行</span><div class="prog-measures"><div class="measure"><div class="beat has-chord"><div class="measure-num">1</div><div class="measure-chord">C</div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">6</div><div class="measure-chord">A<small>m</small></div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">2</div><div class="measure-chord">D<small>m</small></div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">5</div><div class="measure-chord">G</div></div></div></div></div><div class="prog-section"><span class="prog-label">副歌常见</span><div class="prog-measures"><div class="measure"><div class="beat has-chord"><div class="measure-num">6</div><div class="measure-chord">A<small>m</small></div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">4</div><div class="measure-chord">F</div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">1</div><div class="measure-chord">C</div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">2</div><div class="measure-chord">D<small>m</small></div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">5</div><div class="measure-chord">G</div></div></div></div></div><div class="prog-section"><span class="prog-label">最传统进行</span><div class="prog-measures"><div class="measure"><div class="beat has-chord"><div class="measure-num">1</div><div class="measure-chord">C</div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">4</div><div class="measure-chord">F</div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">5</div><div class="measure-chord">G</div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">1</div><div class="measure-chord">C</div></div></div></div></div><div class="prog-section"><span class="prog-label">摇滚、流行情绪推进</span><div class="prog-measures"><div class="measure"><div class="beat has-chord"><div class="measure-num">6</div><div class="measure-chord">A<small>m</small></div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">4</div><div class="measure-chord">F</div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">5</div><div class="measure-chord">G</div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">1</div><div class="measure-chord">C</div></div></div></div></div><div class="prog-section"><span class="prog-label">渐进情绪</span><div class="prog-measures"><div class="measure"><div class="beat has-chord"><div class="measure-num">6</div><div class="measure-chord">A<small>m</small></div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">3</div><div class="measure-chord">E<small>m</small></div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">4</div><div class="measure-chord">F</div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">5</div><div class="measure-chord">G</div></div></div></div></div><div class="prog-section"><span class="prog-label">终止进行</span><div class="prog-measures"><div class="measure"><div class="beat has-chord"><div class="measure-num">6</div><div class="measure-chord">A<small>m</small></div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">2</div><div class="measure-chord">D<small>m</small></div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">5</div><div class="measure-chord">G</div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">1</div><div class="measure-chord">C</div></div></div></div></div></div>
+  </div>
+</div>
+<div class="table-wrap">
+  <table id="table">
+    <thead>
+      <tr>
+        <th class="col-id sorted" onclick="sortBy(&#39;id&#39;)" style="top: 116px;"># <span class="sort-arrow">▲</span></th>
+        <th onclick="sortBy(&#39;name&#39;)" style="top: 116px;">歌名 <span class="sort-arrow"></span></th>
+        <th onclick="sortBy(&#39;artist&#39;)" style="top: 116px;">原唱 <span class="sort-arrow"></span></th>
+        <th class="col-key" onclick="sortBy(&#39;key&#39;)" style="top: 116px;">原调 <span class="sort-arrow"></span></th>
+        <th class="col-male" onclick="sortBy(&#39;maleKey&#39;)" style="top: 116px;">男调 <span class="sort-arrow"></span></th>
+        <th class="col-female" onclick="sortBy(&#39;femaleKey&#39;)" style="top: 116px;">女调 <span class="sort-arrow"></span></th>
+        <th class="col-bpm" onclick="sortBy(&#39;bpm&#39;)" style="top: 116px;">速度 <span class="sort-arrow"></span></th>
+        <th class="col-timesig" onclick="sortBy(&#39;timeSig&#39;)" style="top: 116px;">拍号 <span class="sort-arrow"></span></th>
+        <th class="col-action" style="top: 116px;">操作</th>
+      </tr>
+    </thead>
+    <tbody id="tbody">
+    <tr class="song-row" data-id="229" draggable="true" onclick="toggleProg(229)">
+      <td class="col-id">1</td>
+      <td class="col-name">真的爱你 <span class="prog-toggle">▶</span></td>
+      <td class="col-artist">Beyond</td>
+      <td class="col-key"><span class="key-badge key-C">C</span></td>
+      <td class="col-male">C</td>
+      <td class="col-female">F</td>
+      <td class="col-bpm"><span class="bpm-link" title="设为节拍器速度" onclick="event.stopPropagation();setMetroBpm(82)">82</span></td>
+      <td class="col-timesig">4/4</td>
+      <td class="col-action"><button class="action-btn remove" title="移除" onclick="event.stopPropagation();removeFromTemp(229)">−</button></td>
+    </tr>
+    <tr class="song-row" data-id="227" draggable="true" onclick="toggleProg(227)">
+      <td class="col-id">2</td>
+      <td class="col-name">海阔天空 <span class="prog-toggle">▶</span></td>
+      <td class="col-artist">Beyond</td>
+      <td class="col-key"><span class="key-badge key-F">F</span></td>
+      <td class="col-male">E</td>
+      <td class="col-female">B</td>
+      <td class="col-bpm"><span class="bpm-link" title="设为节拍器速度" onclick="event.stopPropagation();setMetroBpm(77)">77</span></td>
+      <td class="col-timesig">4/4</td>
+      <td class="col-action"><button class="action-btn remove" title="移除" onclick="event.stopPropagation();removeFromTemp(227)">−</button></td>
+    </tr>
+    <tr class="song-row" data-id="228" draggable="true" onclick="toggleProg(228)">
+      <td class="col-id">3</td>
+      <td class="col-name">光辉岁月 <span class="prog-toggle">▶</span></td>
+      <td class="col-artist">Beyond</td>
+      <td class="col-key"><span class="key-badge key-E">E</span></td>
+      <td class="col-male">E</td>
+      <td class="col-female">A</td>
+      <td class="col-bpm"><span class="bpm-link" title="设为节拍器速度" onclick="event.stopPropagation();setMetroBpm(75)">75</span></td>
+      <td class="col-timesig">4/4</td>
+      <td class="col-action"><button class="action-btn remove" title="移除" onclick="event.stopPropagation();removeFromTemp(228)">−</button></td>
+    </tr>
+    <tr class="song-row" data-id="230" draggable="true" onclick="toggleProg(230)">
+      <td class="col-id">4</td>
+      <td class="col-name">喜欢你 <span class="prog-toggle">▶</span></td>
+      <td class="col-artist">Beyond</td>
+      <td class="col-key"><span class="key-badge key-C">C</span></td>
+      <td class="col-male">C</td>
+      <td class="col-female">F</td>
+      <td class="col-bpm"><span class="bpm-link" title="设为节拍器速度" onclick="event.stopPropagation();setMetroBpm(76)">76</span></td>
+      <td class="col-timesig">4/4</td>
+      <td class="col-action"><button class="action-btn remove" title="移除" onclick="event.stopPropagation();removeFromTemp(230)">−</button></td>
+    </tr>
+    <tr class="song-row" data-id="231" draggable="true" onclick="toggleProg(231)">
+      <td class="col-id">5</td>
+      <td class="col-name">不再犹豫 <span class="prog-toggle">▶</span></td>
+      <td class="col-artist">Beyond</td>
+      <td class="col-key"><span class="key-badge key-G">G</span></td>
+      <td class="col-male">G</td>
+      <td class="col-female">F</td>
+      <td class="col-bpm"><span class="bpm-link" title="设为节拍器速度" onclick="event.stopPropagation();setMetroBpm(134)">134</span></td>
+      <td class="col-timesig">4/4</td>
+      <td class="col-action"><button class="action-btn remove" title="移除" onclick="event.stopPropagation();removeFromTemp(231)">−</button></td>
+    </tr>
+    <tr class="song-row" data-id="304" draggable="true" onclick="toggleProg(304)">
+      <td class="col-id">6</td>
+      <td class="col-name">后来 <span class="prog-toggle">▶</span></td>
+      <td class="col-artist">刘若英</td>
+      <td class="col-key"><span class="key-badge key-Eb">Eb</span></td>
+      <td class="col-male">Eb</td>
+      <td class="col-female">Eb</td>
+      <td class="col-bpm"><span class="bpm-link" title="设为节拍器速度" onclick="event.stopPropagation();setMetroBpm(76)">76</span></td>
+      <td class="col-timesig">4/4</td>
+      <td class="col-action"><button class="action-btn remove" title="移除" onclick="event.stopPropagation();removeFromTemp(304)">−</button></td>
+    </tr>
+    <tr class="song-row" data-id="305" draggable="true" onclick="toggleProg(305)">
+      <td class="col-id">7</td>
+      <td class="col-name">情人 <span class="prog-toggle">▶</span></td>
+      <td class="col-artist">Beyond</td>
+      <td class="col-key"><span class="key-badge key-C">C</span></td>
+      <td class="col-male">C</td>
+      <td class="col-female">F</td>
+      <td class="col-bpm"><span class="bpm-link" title="设为节拍器速度" onclick="event.stopPropagation();setMetroBpm(73)">73</span></td>
+      <td class="col-timesig">4/4</td>
+      <td class="col-action"><button class="action-btn remove" title="移除" onclick="event.stopPropagation();removeFromTemp(305)">−</button></td>
+    </tr>
+    <tr class="song-row" data-id="306" draggable="true" onclick="toggleProg(306)">
+      <td class="col-id">8</td>
+      <td class="col-name">李白 <span class="prog-toggle">▶</span></td>
+      <td class="col-artist">李荣浩</td>
+      <td class="col-key"><span class="key-badge key-C">C</span></td>
+      <td class="col-male">C</td>
+      <td class="col-female">F</td>
+      <td class="col-bpm"><span class="bpm-link" title="设为节拍器速度" onclick="event.stopPropagation();setMetroBpm(115)">115</span></td>
+      <td class="col-timesig">4/4</td>
+      <td class="col-action"><button class="action-btn remove" title="移除" onclick="event.stopPropagation();removeFromTemp(306)">−</button></td>
+    </tr></tbody>
+  </table>
+</div>
+
+<!-- 展开和弦：铺满锁定行以下的全屏详情区（每次仅一首） -->
+<div class="detail-view" id="detailView" style="top: 116px;">
+  <div class="detail-bar">
+    <div class="detail-title" id="detailTitle"><span class="detail-name">真的爱你</span><span class="detail-meta"><span class="dm-chip"><i>原调</i><b>C</b></span><span class="dm-chip"><i>男调</i><b>C</b></span><span class="dm-chip"><i>女调</i><b>F</b></span><span class="dm-chip"><i>速度</i><b>82</b></span><span class="dm-chip"><i>拍号</i><b>4/4</b></span></span></div>
+    <div class="detail-actions">
+      <button class="btn outline" id="prevSong" title="上一首" onclick="navigateSong(-1)">◀ 上一首</button>
+      <button class="btn outline" id="nextSong" title="下一首" onclick="navigateSong(1)">下一首 ▶</button>
+      <button class="btn outline" id="editToggle" title="编辑：修改字母和弦、模块名称，或新增模块，保存后自动推导级数">✏️ 编辑</button>
+      <button class="btn outline" id="editCancel" title="取消编辑" onclick="toggleEditMode()" style="display: none;">✕ 取消</button>
+      <button class="detail-close" onclick="closeDetail()">✕ 关闭</button>
+    </div>
+  </div>
+  <div class="detail-body" id="detailBody"><div class="prog-detail"><div class="prog-section"><span class="prog-label">前奏 solo</span><div class="prog-measures"><div class="measure"><div class="beat has-chord"><div class="measure-num">1</div><div class="measure-chord">C</div></div><div class="beat rest"><div class="measure-chord rest-mark">-</div></div><div class="beat has-chord"><div class="measure-num">5</div><div class="measure-chord">G</div></div><div class="beat rest"><div class="measure-chord rest-mark">-</div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">6</div><div class="measure-chord">A<small>m</small></div></div><div class="beat rest"><div class="measure-chord rest-mark">-</div></div><div class="beat has-chord"><div class="measure-num">4</div><div class="measure-chord">F</div></div><div class="beat rest"><div class="measure-chord rest-mark">-</div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">1</div><div class="measure-chord">C</div></div><div class="beat rest"><div class="measure-chord rest-mark">-</div></div><div class="beat has-chord"><div class="measure-num">5</div><div class="measure-chord">G</div></div><div class="beat rest"><div class="measure-chord rest-mark">-</div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">1</div><div class="measure-chord">C</div></div><div class="beat rest"><div class="measure-chord rest-mark">-</div></div><div class="beat rest"><div class="measure-chord rest-mark">-</div></div><div class="beat rest"><div class="measure-chord rest-mark">-</div></div></div></div></div><div class="prog-section"><span class="prog-label">主歌 Verse</span><div class="prog-measures"><div class="measure"><div class="beat has-chord"><div class="measure-num">1</div><div class="measure-chord">C</div></div><div class="beat rest"><div class="measure-chord rest-mark">-</div></div><div class="beat has-chord"><div class="measure-num">5</div><div class="measure-chord">G</div></div><div class="beat rest"><div class="measure-chord rest-mark">-</div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">6</div><div class="measure-chord">A<small>m</small></div></div><div class="beat rest"><div class="measure-chord rest-mark">-</div></div><div class="beat has-chord"><div class="measure-num">4</div><div class="measure-chord">F</div></div><div class="beat rest"><div class="measure-chord rest-mark">-</div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">1</div><div class="measure-chord">C</div></div><div class="beat rest"><div class="measure-chord rest-mark">-</div></div><div class="beat has-chord"><div class="measure-num">5</div><div class="measure-chord">G</div></div><div class="beat rest"><div class="measure-chord rest-mark">-</div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">1</div><div class="measure-chord">C</div></div><div class="beat rest"><div class="measure-chord rest-mark">-</div></div><div class="beat rest"><div class="measure-chord rest-mark">-</div></div><div class="beat rest"><div class="measure-chord rest-mark">-</div></div></div></div></div><div class="prog-section"><span class="prog-label">预副歌 Pre-Chorus</span><div class="prog-measures"><div class="measure"><div class="beat has-chord"><div class="measure-num">4</div><div class="measure-chord">F</div></div><div class="beat rest"><div class="measure-chord rest-mark">-</div></div><div class="beat has-chord"><div class="measure-num">5</div><div class="measure-chord">G</div></div><div class="beat rest"><div class="measure-chord rest-mark">-</div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">4</div><div class="measure-chord">F</div></div><div class="beat rest"><div class="measure-chord rest-mark">-</div></div><div class="beat has-chord"><div class="measure-num">5</div><div class="measure-chord">G</div></div><div class="beat rest"><div class="measure-chord rest-mark">-</div></div></div></div></div><div class="prog-section"><span class="prog-label">副歌 Chorus</span><div class="prog-measures"><div class="measure"><div class="beat has-chord"><div class="measure-num">1</div><div class="measure-chord">C</div></div><div class="beat rest"><div class="measure-chord rest-mark">-</div></div><div class="beat has-chord"><div class="measure-num">5</div><div class="measure-chord">G</div></div><div class="beat rest"><div class="measure-chord rest-mark">-</div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">6</div><div class="measure-chord">A<small>m</small></div></div><div class="beat rest"><div class="measure-chord rest-mark">-</div></div><div class="beat has-chord"><div class="measure-num">4</div><div class="measure-chord">F</div></div><div class="beat rest"><div class="measure-chord rest-mark">-</div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">1</div><div class="measure-chord">C</div></div><div class="beat rest"><div class="measure-chord rest-mark">-</div></div><div class="beat has-chord"><div class="measure-num">5</div><div class="measure-chord">G</div></div><div class="beat rest"><div class="measure-chord rest-mark">-</div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">1</div><div class="measure-chord">C</div></div><div class="beat rest"><div class="measure-chord rest-mark">-</div></div><div class="beat rest"><div class="measure-chord rest-mark">-</div></div><div class="beat rest"><div class="measure-chord rest-mark">-</div></div></div></div></div><div class="prog-section"><span class="prog-label">solo</span><div class="prog-measures"><div class="measure"><div class="beat has-chord"><div class="measure-num">1</div><div class="measure-chord">C</div></div><div class="beat rest"><div class="measure-chord rest-mark">-</div></div><div class="beat has-chord"><div class="measure-num">5</div><div class="measure-chord">G</div></div><div class="beat rest"><div class="measure-chord rest-mark">-</div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">6</div><div class="measure-chord">A<small>m</small></div></div><div class="beat rest"><div class="measure-chord rest-mark">-</div></div><div class="beat has-chord"><div class="measure-num">4</div><div class="measure-chord">F</div></div><div class="beat rest"><div class="measure-chord rest-mark">-</div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">1</div><div class="measure-chord">C</div></div><div class="beat rest"><div class="measure-chord rest-mark">-</div></div><div class="beat has-chord"><div class="measure-num">5</div><div class="measure-chord">G</div></div><div class="beat rest"><div class="measure-chord rest-mark">-</div></div></div><div class="measure"><div class="beat has-chord"><div class="measure-num">1</div><div class="measure-chord">C</div></div><div class="beat rest"><div class="measure-chord rest-mark">-</div></div><div class="beat rest"><div class="measure-chord rest-mark">-</div></div><div class="beat rest"><div class="measure-chord rest-mark">-</div></div></div></div></div></div></div>
+</div>
+
+<div class="metro" id="metro" style="display:none;">
+  <div class="metro-head"><span>🎵 节拍器</span><button class="metro-x" onclick="toggleMetronome()">×</button></div>
+  <div class="metro-bpm"><input type="number" id="metroBpmInput" min="40" max="240" value="80" oninput="onMetroBpmInput(this.value)" onblur="setMetroBpm(this.value)" onclick="this.select()"> <small>BPM</small></div>
+  <input type="range" id="metroRange" min="40" max="240" value="80" oninput="setMetroBpm(this.value)">
+  <div class="metro-vol">
+    <span class="metro-vol-label">音量</span>
+    <input type="range" id="metroVol" min="20" max="300" value="100" oninput="setMetroVol(this.value)">
+    <span id="metroVolVal" class="metro-vol-val">100%</span>
+  </div>
+  <div class="metro-meter">
+    <div class="metro-meter-label">拍号（可自由输入，如 4/4 · 3/4 · 6/8 · 5/4 · 7/8）</div>
+    <div class="metro-meter-row">
+      <input type="text" id="metroMeter" value="4/4" maxlength="5" inputmode="numeric" oninput="setMeter(this.value)">
+      <div class="metro-presets">
+        <button onclick="setMeter(&#39;4/4&#39;)" class="active">4/4</button>
+        <button onclick="setMeter(&#39;3/4&#39;)">3/4</button>
+        <button onclick="setMeter(&#39;2/4&#39;)">2/4</button>
+        <button onclick="setMeter(&#39;6/8&#39;)">6/8</button>
+        <button onclick="setMeter(&#39;5/4&#39;)">5/4</button>
+        <button onclick="setMeter(&#39;7/8&#39;)">7/8</button>
+      </div>
+    </div>
+  </div>
+  <div class="metro-ctrl">
+    <button id="metroPlay" onclick="metroToggle()">▶ 开始</button>
+    <button class="outline" onclick="metroTap()">点按测速</button>
+  </div>
+  <div class="metro-beat" id="metroBeat"><span class="bdot b-strong"></span><span class="bdot b-weak"></span><span class="bdot b-weak"></span><span class="bdot b-weak"></span></div>
+</div>
+<div id="chordTip" class="chord-tip"></div>
+
+<div class="export-mask" id="exportMask" onclick="if(event.target===this)closeExportModal()">
+  <div class="export-box">
+    <div class="export-head"><span>📤 导出修改指令</span><button class="export-x" onclick="closeExportModal()">×</button></div>
+    <div class="export-hint" id="exportHint"></div>
+    <textarea class="export-ta" id="exportTa" readonly="" spellcheck="false"></textarea>
+    <div class="export-actions">
+      <button class="btn primary" id="exportCopyBtn" onclick="copyExport()">📋 复制文本</button>
+      <button class="btn outline" onclick="downloadExport()">💾 下载 txt</button>
+    </div>
+    <div class="save-github">
+      <div class="save-row">
+        <input type="password" id="ghToken" class="gh-token" placeholder="GitHub Token（需 repo 权限）" autocomplete="off">
+        <label class="gh-remember"><input type="checkbox" id="ghRemember"> 记住</label>
+      </div>
+      <div class="save-row">
+        <button class="btn primary" id="ghSaveBtn" onclick="saveToGitHub()">☁ 保存到 GitHub</button>
+        <span id="ghSaveStatus" class="gh-status"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="export-mask" id="addMask" onclick="if(event.target===this)closeAddModal()">
+  <div class="export-box">
+    <div class="export-head"><span>＋ 新增歌曲</span><button class="export-x" onclick="closeAddModal()">×</button></div>
+    <div class="export-hint">仅<b>歌名</b>必填。添加后自动进入编辑模式，可直接录入和弦与歌词；之后点「保存到 GitHub」即可同步。</div>
+    <div class="add-form">
+      <div class="add-row">
+        <label class="add-field" style="flex:2">歌名 *<input class="gh-token" id="add-name" type="text" placeholder="如：海阔天空" autocomplete="off"></label>
+        <label class="add-field" style="flex:2">原唱<input class="gh-token" id="add-artist" type="text" placeholder="如：Beyond" autocomplete="off"></label>
+      </div>
+      <div class="add-row">
+        <label class="add-field">原调<select class="gh-token" id="add-key"></select></label>
+        <label class="add-field">男调<select class="gh-token" id="add-mk"></select></label>
+        <label class="add-field">女调<select class="gh-token" id="add-fk"></select></label>
+      </div>
+      <div class="add-row">
+        <label class="add-field">速度<input class="gh-token" id="add-bpm" type="text" placeholder="如：82" inputmode="numeric"></label>
+        <label class="add-field">拍号<input class="gh-token" id="add-ts" type="text" value="4/4" placeholder="4/4"></label>
+      </div>
+    </div>
+    <div class="export-actions">
+      <button class="btn primary" id="addConfirmBtn" onclick="addSong()">✔ 添加并编辑</button>
+      <button class="btn outline" onclick="closeAddModal()">取消</button>
+    </div>
+  </div>
+</div>
+
+<button class="fs-btn" id="fsBtn" title="全屏 / 退出全屏" aria-label="全屏" onclick="toggleFullscreen()">
+  <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+    <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+</button>
+
+<script src="app.js"></script>
+<script>
+// 注册 Service Worker（相对路径，兼容 GitHub Pages 子路径 /repo/ 部署），注册失败不影响使用
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('sw.js').catch(function (err) { console.warn('SW 注册失败：', err); });
+  });
+}
+</script>
+
+
+
+</body></html>
