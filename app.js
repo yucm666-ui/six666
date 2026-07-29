@@ -447,6 +447,7 @@ function renderRefPanel() {
       return '<div class="prog-section"><span class="prog-label">' + escAttr(pr.n) + '</span><div class="prog-measures">' + cells + '</div></div>';
     }).join('');
     body.innerHTML = html;
+    fitMeasureFonts(body);
     updateRefEditBtn();
     return;
   }
@@ -601,6 +602,37 @@ function saveSectionLyrics(id, section, measureIdx, val) {
 function autoGrow(el) {
   el.style.height = '28px';
   el.style.height = el.scrollHeight + 'px';
+}
+
+// 小节和弦字号自适应：当某小节内和弦名过长、在固定网格列宽里装不下时，
+// 自动缩小和弦字体（而非把小节撑宽或换行留空），保证和弦字母完整可读。
+// 策略：逐拍独立测量、独立缩放——只有真正挤的那一拍才缩小，不挤的拍保持原大字号，
+// 这样"长和弦不被盖住"与"短和弦尽量大、视奏易看"能兼得，而不是整小节被最长一拍拖累统一变很小。
+function fitMeasureFonts(root) {
+  if (!root || !root.querySelectorAll) return;
+  const MIN_FONT = 10;   // 视奏可读性下限：缩到此仍装不下才允许被裁，避免字小到看不清
+  root.querySelectorAll('.prog-measures').forEach(pm => {
+    pm.querySelectorAll('.measure').forEach(m => {
+      const chords = m.querySelectorAll('.measure-chord');
+      if (!chords.length) return;
+      const cs = getComputedStyle(m);
+      const padX = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
+      const avail = m.clientWidth - padX;            // 小节内容区可用宽
+      if (!(avail > 0)) return;                       // 容器不可见（clientWidth=0）时跳过
+      const perBeatAvail = avail / chords.length;     // flex 等分下每拍可用宽
+      chords.forEach(c => {
+        const bcs = getComputedStyle(c);
+        const beatPadX = parseFloat(bcs.paddingLeft) + parseFloat(bcs.paddingRight);
+        const baseFont = parseFloat(bcs.fontSize) || 14;
+        const cw = c.scrollWidth + beatPadX;          // 该和弦自身真实宽（nowrap 下准确，不受父级 min-width:0 影响）
+        if (cw <= perBeatAvail) return;               // 这拍装得下，保持原字号不缩
+        const r = perBeatAvail / cw;
+        if (r >= 1) return;
+        const newFont = Math.max(MIN_FONT, Math.min(baseFont, baseFont * r)); // 下限10px，绝不放大
+        if (newFont < baseFont) c.style.fontSize = newFont + 'px';
+      });
+    });
+  });
 }
 
 // 生成单个段落（前奏/主歌/副歌…或对照表条目）的和弦展示 HTML。
@@ -1174,6 +1206,7 @@ function renderDetail() {
   html += '</div>';
   bodyEl.innerHTML = html;
   bodyEl.querySelectorAll('.lyrics-input').forEach(el => autoGrow(el));
+  fitMeasureFonts(bodyEl);
   updateEditBtn();
 }
 // 关闭详情区，回到歌曲列表；silent=true 时跳过重渲染（由调用方统一渲染，如 switchTab）
@@ -1615,6 +1648,18 @@ function hideChordTip() { tip.style.display = 'none'; tipVisible = false; }
 document.addEventListener('mouseover', e => { const el = e.target.closest('.measure-chord'); if (el) showChordTip(el.textContent, e); });
 document.addEventListener('mousemove', e => { if (tipVisible) positionTip(e); });
 document.addEventListener('mouseout', e => { const el = e.target.closest('.measure-chord'); if (el) hideChordTip(); });
+
+// 窗口尺寸变化（如平板横竖屏切换）后，网格列宽改变，重新计算各小节和弦字号
+let _fitRAF = 0;
+window.addEventListener('resize', () => {
+  if (_fitRAF) cancelAnimationFrame(_fitRAF);
+  _fitRAF = requestAnimationFrame(() => {
+    const db = document.getElementById('detailBody');
+    if (db) fitMeasureFonts(db);
+    const rp = document.getElementById('refPanelBody');
+    if (rp) fitMeasureFonts(rp);
+  });
+});
 
 // ======================== 临时歌单拖拽排序 ========================
 let dragId = null;
