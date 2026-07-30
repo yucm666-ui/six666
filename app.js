@@ -2,7 +2,7 @@
 // ======================== 应用版本号（单一数据源） ========================
 // 界面右上角与浏览器标签会显示此版本，方便平板上核对是否吃到了最新缓存。
 // 升级功能时改这一处即可，无需改别处。
-const APP_VERSION = '1.0.12';
+const APP_VERSION = '1.0.13';
 window.APP_VERSION = APP_VERSION;
 function applyVersion() {
   document.title = '工作歌单 v' + APP_VERSION;
@@ -1999,11 +1999,13 @@ function initSwipeNav() {
   const st = { active: false, x0: 0, y0: 0, moved: false };
 
   const hideHints = () => { hintL.style.opacity = 0; hintR.style.opacity = 0; };
+  // 彻底清除 transform：残留 translateX(0) 会把 body 提升为合成层，导致页面被缩放
+  const clearBodyXf = () => { body.style.transition = ''; body.style.transform = ''; };
   const springBack = () => {
     body.style.transition = 'transform .18s ease';
     body.style.transform = 'translateX(0)';
     hideHints();
-    setTimeout(() => { body.style.transition = ''; }, 220);
+    setTimeout(clearBodyXf, 220);
   };
 
   function onStart(e) {
@@ -2065,7 +2067,7 @@ function initSwipeNav() {
       requestAnimationFrame(() => requestAnimationFrame(() => {
         body.style.transition = 'transform .2s ease';
         body.style.transform = 'translateX(0)';
-        setTimeout(() => { body.style.transition = ''; }, 220);
+        setTimeout(clearBodyXf, 220);
       }));
     }, 200);
   }
@@ -2097,14 +2099,17 @@ function initTabSwipe() {
   const THRESHOLD = 55;   // 触发切tab的最小水平位移(px)
   const RATIO = 1.4;      // 水平位移需明显大于垂直，才算横滑（避免误伤纵向滚动）
   const DAMP = 0.5;       // 跟手阻尼
+  const SLIDE = 60;       // 切tab时小幅位移(px)，避免整屏位移触发移动端合成层缩放
   const st = { active: false, x0: 0, y0: 0, moved: false };
 
   const hideHints = () => { hintL.style.opacity = 0; hintR.style.opacity = 0; };
+  // 彻底清除 transform/transition/opacity：残留 translateX(0) 会把大容器永久提升为合成层，导致页面被缩放
+  const clearXf = () => { wrap.style.transition = ''; wrap.style.transform = ''; wrap.style.opacity = ''; };
   const springBack = () => {
     wrap.style.transition = 'transform .18s ease';
     wrap.style.transform = 'translateX(0)';
     hideHints();
-    setTimeout(() => { wrap.style.transition = ''; }, 220);
+    setTimeout(clearXf, 220);
   };
 
   function onStart(e) {
@@ -2149,22 +2154,25 @@ function initTabSwipe() {
     const target = dir > 0 ? 'temp' : 'main';
     if (currentTab === target) { springBack(); return; }   // 已在目标tab，不切、回弹
 
-    // 滑出旧列表 → 切tab → 新列表从对侧滑入
-    const outX = (dir > 0 ? -1 : 1) * Math.min(window.innerWidth, 1200);
-    wrap.style.transition = 'transform .2s ease';
-    wrap.style.transform = 'translateX(' + outX + 'px)';
+    // 小幅滑出 + 淡出 → 切tab → 小幅滑入 + 淡入（不用整屏位移，避免移动端合成层把页面缩放）
+    wrap.style.transition = 'transform .18s ease, opacity .18s ease';
+    wrap.style.transform = 'translateX(' + (dir > 0 ? -SLIDE : SLIDE) + 'px)';
+    wrap.style.opacity = '0.2';
     hideHints();
     setTimeout(() => {
       switchTab(target);
+      // 切回：从对侧小幅起点淡入；结束后彻底清除 transform（关键，根治“页面缩小”）
       wrap.style.transition = 'none';
-      wrap.style.transform = 'translateX(0)';
-      wrap.style.transform = 'translateX(' + (-outX) + 'px)';
-      requestAnimationFrame(() => requestAnimationFrame(() => {
-        wrap.style.transition = 'transform .2s ease';
+      wrap.style.transform = 'translateX(' + (dir > 0 ? SLIDE : -SLIDE) + 'px)';
+      wrap.style.opacity = '0';
+      void wrap.offsetWidth;  // 强制重排，确保起点生效
+      requestAnimationFrame(() => {
+        wrap.style.transition = 'transform .2s ease, opacity .2s ease';
         wrap.style.transform = 'translateX(0)';
-        setTimeout(() => { wrap.style.transition = ''; }, 220);
-      }));
-    }, 200);
+        wrap.style.opacity = '1';
+        setTimeout(clearXf, 240);
+      });
+    }, 180);
   }
 
   document.addEventListener('touchstart', onStart, { passive: true });
