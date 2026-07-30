@@ -2,7 +2,7 @@
 // ======================== 应用版本号（单一数据源） ========================
 // 界面右上角与浏览器标签会显示此版本，方便平板上核对是否吃到了最新缓存。
 // 升级功能时改这一处即可，无需改别处。
-const APP_VERSION = '1.0.2';
+const APP_VERSION = '1.0.3';
 function applyVersion() {
   document.title = '工作歌单 v' + APP_VERSION;
   const el = document.getElementById('appVersion');
@@ -285,6 +285,48 @@ function numToChord(progStr, key, origKey) {
   }).join('|');
 }
 
+// ======================== 忽略级数模式：半音阶变调 ========================
+// 忽略级数歌的 progMap 直接存字母和弦（不存数字级数），变调不能走级数推导，
+// 改为按 (目标调 - 原调) 的半音数整体平移每个和弦根音（含转位低音），
+// 和弦性质(m/7/maj7/sus/°/+)原样保留。好处：歌曲内相对升降调关系
+// （如《海芋恋》升KEY段比主歌高7个半音）会随整首等比平移而自动保留。
+// 输出拼写：目标调为降号调(F/Bb/Eb/Ab/Db/Gb)时用降号序列，否则用升号序列（符合吉他谱习惯）。
+const CHROMATIC_SHARP = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const CHROMATIC_FLAT  = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
+const FLAT_TO_SHARP   = {'Db':'C#','Eb':'D#','Gb':'F#','Ab':'G#','Bb':'A#','Cb':'B'};
+function _pickScale(targetKey) {
+  const flats = new Set(['F','Bb','Eb','Ab','Db','Gb','Cb']);
+  return flats.has(targetKey) ? CHROMATIC_FLAT : CHROMATIC_SHARP;
+}
+function _shiftNote(note, semis, scale) {
+  const norm = FLAT_TO_SHARP[note] || note;   // 降号字母先等音转升号，才能在纯升号索引中定位
+  const i = CHROMATIC_SHARP.indexOf(norm);
+  if (i < 0) return note;
+  return scale[(i + semis + 120) % 12];
+}
+function transposeLetterChord(chordStr, semis, targetKey) {
+  if (!semis) return chordStr;                 // 0 半音 = 原调，原样返回
+  const scale = _pickScale(targetKey);
+  const re = /[A-G][#b]*(?:sus\d*|maj\d*|min|dim|aug|add\d*|[mM]\d*|\+|\°\d*|\d+)*(?:\/[A-G][#b]*)?/g;
+  return chordStr.replace(re, (chord) => {
+    let out = chord.replace(/^([A-G][#b]*)/, (_, root) => _shiftNote(root, semis, scale));
+    out = out.replace(/(\/[A-G][#b]*)$/, (m, bass) => '/' + _shiftNote(bass.slice(1), semis, scale));
+    return out;
+  });
+}
+// 统一入口：忽略级数歌走半音平移，普通歌走数字级数转换(numToChord)
+function resolveChordStr(song, val, targetKey, origKey) {
+  if (!val) return '';
+  if (song && song.ignoreDegrees) {
+    const tk = minorToMajor[targetKey] || targetKey;
+    const ok = minorToMajor[origKey] || origKey;
+    const t = NOTE_NORM[tk] != null ? NOTE_NORM[tk] : 0;
+    const o = NOTE_NORM[ok] != null ? NOTE_NORM[ok] : 0;
+    return transposeLetterChord(val, t - o, tk);
+  }
+  return numToChord(val, targetKey, origKey);
+}
+
 // ======================== 字母和弦 → 数字级数（编辑模式反向推导） ========================
 // 把单个字母和弦（如 C / Am / G7 / F#m / C/G / Bdim）反向映射为相对某调的数字级数。
 // 优先用已有的 convertToken/numToChord 作为"真值"去做匹配搜索，确保正反向完全一致。
@@ -449,7 +491,7 @@ function renderRefPanel() {
     // 普通模式：只读网格
     const html = refSong.progs.map(pr => {
       const val = pr.p || '';
-      const chordStr = numToChord(val, key, refSong.key);
+      const chordStr = resolveChordStr(refSong, val, key, refSong.key);
       const beats = numeratorOf(refSong.timeSig);
       const measures = parseMeasures(val, chordStr, beats);
       const cells = measures.map(m =>
@@ -519,7 +561,7 @@ function refSetProg(uid, v) {
   const prev = document.getElementById('refprev-' + uid);
   if (prev) {
     const s = songs.find(x => x.pinned && x.progs);
-    if (s) prev.textContent = v ? numToChord(v, effectiveChordKey(s.key), s.key) : '';
+    if (s) prev.textContent = v ? resolveChordStr(s, v, effectiveChordKey(s.key), s.key) : '';
   }
 }
 function refAddProg() {
@@ -684,7 +726,7 @@ function sectionHtml(s, k, val, label, inEdit) {
   if (inEdit && !s.pinned) {
     // 编辑模式：模块名称可输入、和弦以字母形式可改；空模块也渲染以便新增/命名
     const baseKey = minorToMajor[s.key] || s.key;
-    const letterStr = val ? numToChord(val, baseKey) : '';
+    const letterStr = val ? resolveChordStr(s, val, baseKey, s.key) : '';
     const editField = '<textarea class="edit-chords" id="edit-' + s.id + '-' + k + '" rows="1" oninput="autoGrow(this)">' + letterStr + '</textarea>';
     const nameField = '<input class="section-label-input" id="label-' + s.id + '-' + k + '" value="' + escAttr(effLabel) + '" placeholder="模块名称" />';
     const showDel = !isProg; // 固定与自定义模块均可删除（对照表 prog 已在 !s.pinned 处被排除）
@@ -695,7 +737,7 @@ function sectionHtml(s, k, val, label, inEdit) {
 
   // 普通模式：数字级数 + 字母和弦网格（按拍号分子均分每小节）+ 每小节歌词
   const effKey = effectiveChordKey(s.key);
-  const chordStr = val ? numToChord(val, effKey, s.key) : '';
+  const chordStr = val ? resolveChordStr(s, val, effKey, s.key) : '';
   const beats = numeratorOf(s.timeSig);
   const measures = val ? parseMeasures(val, chordStr, beats) : [];
   const cells = measures.map((m, idx) => {
