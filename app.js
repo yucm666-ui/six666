@@ -2,7 +2,7 @@
 // ======================== 应用版本号（单一数据源） ========================
 // 界面右上角与浏览器标签会显示此版本，方便平板上核对是否吃到了最新缓存。
 // 升级功能时改这一处即可，无需改别处。
-const APP_VERSION = '1.0.7';
+const APP_VERSION = '1.0.8';
 function applyVersion() {
   document.title = '工作歌单 v' + APP_VERSION;
   const el = document.getElementById('appVersion');
@@ -1974,3 +1974,105 @@ function syncFsBtn() {
 }
 document.addEventListener('fullscreenchange', syncFsBtn);
 document.addEventListener('webkitfullscreenchange', syncFsBtn);
+
+// ======================== 左右滑动切歌（触屏手势） ========================
+function initSwipeNav() {
+  const dv = document.getElementById('detailView');
+  if (!dv) return;
+  const body = document.getElementById('detailBody');
+  if (!body) return;
+
+  // 动态创建左右边缘提示（左滑→下一首、右滑→上一首）
+  const hintL = document.createElement('div');
+  hintL.className = 'swipe-hint swipe-hint-left';
+  hintL.innerHTML = '<span class="sw-arrow">‹</span><span>上一首</span>';
+  const hintR = document.createElement('div');
+  hintR.className = 'swipe-hint swipe-hint-right';
+  hintR.innerHTML = '<span class="sw-arrow">›</span><span>下一首</span>';
+  dv.appendChild(hintL);
+  dv.appendChild(hintR);
+
+  const THRESHOLD = 55;   // 触发切歌的最小水平位移(px)
+  const RATIO = 1.4;      // 水平位移需明显大于垂直，才算横滑（避免误伤纵向滚动）
+  const DAMP = 0.6;       // 跟手阻尼
+  const st = { active: false, x0: 0, y0: 0, moved: false };
+
+  const hideHints = () => { hintL.style.opacity = 0; hintR.style.opacity = 0; };
+  const springBack = () => {
+    body.style.transition = 'transform .18s ease';
+    body.style.transform = 'translateX(0)';
+    hideHints();
+    setTimeout(() => { body.style.transition = ''; }, 220);
+  };
+
+  function onStart(e) {
+    if (editMode) return;                                          // 编辑模式禁用，防误触
+    if (e.target.closest('button, input, textarea, .detail-bar')) return; // 标题栏/按钮/输入区不响应
+    const p = e.touches ? e.touches[0] : e;
+    st.active = true; st.moved = false;
+    st.x0 = p.clientX; st.y0 = p.clientY;
+  }
+  function onMove(e) {
+    if (!st.active || editMode) { st.active = false; return; }
+    const p = e.touches ? e.touches[0] : e;
+    const dx = p.clientX - st.x0;
+    const dy = p.clientY - st.y0;
+    if (!st.moved) {
+      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;            // 未达最小移动量
+      if (Math.abs(dx) > Math.abs(dy) * RATIO) {                   // 锁定为横向手势
+        st.moved = true;
+        if (e.cancelable) e.preventDefault();
+      } else {                                                     // 更像纵向滚动，交还浏览器
+        st.active = false;
+        return;
+      }
+    }
+    if (e.cancelable) e.preventDefault();
+    body.style.transition = 'none';
+    body.style.transform = 'translateX(' + (dx * DAMP) + 'px)';
+    const prog = Math.min(1, Math.abs(dx) / THRESHOLD);
+    if (dx < 0) { hintR.style.opacity = prog; hintL.style.opacity = 0; }  // 左滑→下一首(右侧提示)
+    else { hintL.style.opacity = prog; hintR.style.opacity = 0; }         // 右滑→上一首(左侧提示)
+  }
+  function onEnd(e) {
+    if (!st.active) return;
+    st.active = false;
+    if (!st.moved) return;
+    const p = e.changedTouches ? e.changedTouches[0] : e;
+    const dx = p.clientX - st.x0;
+    const dy = p.clientY - st.y0;
+    if (Math.abs(dx) <= THRESHOLD || Math.abs(dx) <= Math.abs(dy) * RATIO) { springBack(); return; }
+
+    const dir = dx < 0 ? 1 : -1;  // 左滑(dx<0)→下一首(1)；右滑→上一首(-1)
+    // 边界判断：到头不切，回弹
+    const list = getVisibleList();
+    const idx = list.findIndex(s => s.id === currentDetailId);
+    if (!(idx >= 0 && idx + dir >= 0 && idx + dir < list.length)) { springBack(); return; }
+
+    // 滑出旧页 → 切歌 → 新页从对侧滑入
+    const outX = (dir > 0 ? -1 : 1) * Math.min(window.innerWidth, 1200);
+    body.style.transition = 'transform .2s ease';
+    body.style.transform = 'translateX(' + outX + 'px)';
+    hideHints();
+    setTimeout(() => {
+      navigateSong(dir);
+      // 清掉 transform 基线（transition:none 立即归零，不闪）
+      body.style.transition = 'none';
+      body.style.transform = 'translateX(0)';
+      // 新页从对侧进入
+      body.style.transform = 'translateX(' + (-outX) + 'px)';
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        body.style.transition = 'transform .2s ease';
+        body.style.transform = 'translateX(0)';
+        setTimeout(() => { body.style.transition = ''; }, 220);
+      }));
+    }, 200);
+  }
+
+  dv.addEventListener('touchstart', onStart, { passive: true });
+  dv.addEventListener('touchmove', onMove, { passive: false });
+  dv.addEventListener('touchend', onEnd, { passive: true });
+  dv.addEventListener('touchcancel', onEnd, { passive: true });
+}
+
+initSwipeNav();

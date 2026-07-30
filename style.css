@@ -959,7 +959,34 @@ select.gh-token { appearance:auto; cursor:pointer; }
   top: 0;                 /* 实际 top 由 JS 设为锁定行底部 */
   z-index: 60;
   background: var(--bg);
+  overflow: hidden;       /* 裁切滑动跟手的横向溢出，避免横向滚动条 */
 }
+
+/* ===== 左右滑动切歌：屏幕边缘提示 ===== */
+.swipe-hint {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(88,166,255,0.14);
+  color: var(--accent, #79d2ff);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.1;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .1s linear;
+  z-index: 62;
+  user-select: none;
+}
+.swipe-hint .sw-arrow { font-size: 30px; line-height: 1; }
+.swipe-hint-left { left: 16px; }
+.swipe-hint-right { right: 16px; }
 
   .detail-bar {
     flex: 0 0 auto;
