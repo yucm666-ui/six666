@@ -739,6 +739,23 @@
 .bdot.b-mid { background:#d29922; opacity:.7; }
 .bdot.cur { transform:scale(1.5); opacity:1; box-shadow:0 0 10px var(--accent); }
 
+/* 本地歌曲播放（节拍器内） */
+.metro-audio { margin-top:12px; padding-top:12px; border-top:1px solid var(--border); }
+.metro-audio-head { display:flex; align-items:center; justify-content:space-between; font-size:12px; color:var(--text); margin-bottom:6px; }
+.metro-audio-open { padding:4px 12px; border-radius:7px; border:1px solid var(--border); background:var(--accent-dim); color:#fff; cursor:pointer; font-size:12px; }
+.metro-audio-open:hover { opacity:.85; }
+.metro-audio-name { font-size:11px; color:var(--text-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:6px; }
+.metro-seek-row { display:flex; align-items:center; gap:6px; }
+.metro-seek-row input[type=range] { flex:1; margin:0; accent-color:var(--accent); }
+.metro-time { font-size:11px; color:var(--text-dim); font-family:'Consolas','Monaco',monospace; min-width:34px; text-align:center; }
+.metro-audio-ctrl { display:flex; gap:8px; margin-top:8px; }
+.metro-audio-ctrl button { flex:1; padding:7px; border-radius:8px; border:1px solid var(--border); background:var(--accent-dim); color:#fff; cursor:pointer; font-size:13px; }
+.metro-audio-ctrl button:hover { opacity:.85; }
+.metro-rate-row { display:flex; align-items:center; gap:8px; margin-top:8px; font-size:12px; color:var(--text-dim); }
+.metro-rate-label { white-space:nowrap; }
+.metro-rate-row input[type=range] { flex:1; margin:0; accent-color:var(--accent); }
+.metro-rate-val { min-width:46px; text-align:right; color:var(--text); font-family:'Consolas','Monaco',monospace; font-weight:700; }
+
 /* 导出修改弹窗 */
 .export-mask { position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:500; display:none; align-items:center; justify-content:center; padding:20px; }
 .export-mask.open { display:flex; }

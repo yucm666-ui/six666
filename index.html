@@ -303,7 +303,15 @@
     <button class="outline" onclick="metroTap()">点按测速</button>
   </div>
   <div class="metro-beat" id="metroBeat"><span class="bdot b-strong"></span><span class="bdot b-weak"></span><span class="bdot b-weak"></span><span class="bdot b-weak"></span></div>
+  <div class="metro-audio">
+    <div class="metro-audio-head"><span>🎶 歌曲播放</span><button id="audioOpenBtn" class="metro-audio-open" type="button">打开</button><input type="file" id="audioFile" accept="audio/*" hidden></div>
+    <div id="audioName" class="metro-audio-name">未选择音频</div>
+    <div class="metro-seek-row"><span id="audioCur" class="metro-time">0:00</span><input type="range" id="audioSeek" min="0" max="1000" value="0" step="1"><span id="audioDur" class="metro-time">0:00</span></div>
+    <div class="metro-audio-ctrl"><button type="button" onclick="audioRestart()">⏮ 从头</button><button id="audioPlay" type="button" onclick="audioToggle()">▶ 播放</button></div>
+    <div class="metro-rate-row"><span class="metro-rate-label">变速</span><input type="range" id="audioRate" min="0" max="100" value="80" step="1"><span id="audioRateVal" class="metro-rate-val">1.00x</span></div>
+  </div>
 </div>
+<audio id="localAudio" preload="metadata" playsinline></audio>
 <div id="chordTip" class="chord-tip"></div>
 
 <div class="export-mask" id="exportMask" onclick="if(event.target===this)closeExportModal()">
