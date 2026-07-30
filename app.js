@@ -2,7 +2,7 @@
 // ======================== 应用版本号（单一数据源） ========================
 // 界面右上角与浏览器标签会显示此版本，方便平板上核对是否吃到了最新缓存。
 // 升级功能时改这一处即可，无需改别处。
-const APP_VERSION = '1.0.13';
+const APP_VERSION = '1.0.14';
 window.APP_VERSION = APP_VERSION;
 function applyVersion() {
   document.title = '工作歌单 v' + APP_VERSION;
@@ -497,8 +497,8 @@ function renderRefPanel() {
       const measures = parseMeasures(val, chordStr, beats);
       const cells = measures.map(m =>
         '<div class="measure">' + measureCellsHtml(m.num, m.chord, beats, refSong.key, refSong.ignoreDegrees) + '</div>'
-      ).join('');
-      return '<div class="prog-section"><span class="prog-label">' + escAttr(pr.n) + '</span><div class="prog-measures">' + cells + '</div></div>';
+      );
+      return '<div class="prog-section"><span class="prog-label">' + escAttr(pr.n) + '</span><div class="prog-measures">' + rowWrap(cells) + '</div></div>';
     }).join('');
     body.innerHTML = html;
     fitMeasureWidths(body);
@@ -663,47 +663,63 @@ function autoGrow(el) {
 // 其余小节等分会收缩让出空间（min-width 保底）。整体单行排列，不换行、不留空挡。
 // 实现：小节为 flex 单行等宽；检测到某小节等宽分配下最宽一拍放不下时，
 // 将该小节拍格改为按内容宽度排列并固定其宽度为内容所需宽（紧凑，不浪费空间），从而不裁剪。
+// 把每 4 个小节包进一个 .measure-row，保证「每行固定 4 个小节」的 DOM 结构
+function rowWrap(measureHtmlArr) {
+  let out = '';
+  for (let i = 0; i < measureHtmlArr.length; i += 4) {
+    out += '<div class="measure-row">' + measureHtmlArr.slice(i, i + 4).join('') + '</div>';
+  }
+  return out;
+}
+
+// 每行固定 4 个小节：行内等分；若某小节和弦内容超出等分宽（字会被盖住），
+// 则该小节放大、同行其余小节按比例缩小，整行仍保持 4 个小节不变（总宽填满整行）。
 function fitMeasureWidths(root) {
   if (!root || !root.querySelectorAll) return;
   root.querySelectorAll('.prog-measures').forEach(pm => {
-    const measures = Array.from(pm.querySelectorAll('.measure'));
-    if (!measures.length) return;
-    // 先清除上一轮加宽，恢复等分基准，再迭代检测（加宽会挤压邻格，需多次收敛）
-    measures.forEach(m => {
-      m.style.flex = ''; m.style.width = '';
-      m.querySelectorAll('.beat').forEach(b => { b.style.flex = ''; });
-    });
-    for (let iter = 0; iter < 6; iter++) {
-      let changed = false;
+    let rows = Array.from(pm.querySelectorAll('.measure-row'));
+    if (!rows.length) rows = [pm];                 // 兜底：未分行时整段当作一行
+    rows.forEach(row => {
+      const measures = Array.from(row.querySelectorAll('.measure'));
+      if (!measures.length) return;
+      const rowW = row.clientWidth;
+      if (!rowW) return;
+      // 清掉上一轮样式，回到等分基准再检测溢出
       measures.forEach(m => {
-        if (m.dataset.wide === '1') return;            // 已加宽的小节跳过
+        m.style.flex = '';
+        m.style.flexGrow = '';
+        m.querySelectorAll('.beat').forEach(b => { b.style.flex = ''; });
+      });
+      const COUNT = measures.length;
+      const equal = rowW / COUNT;
+      const tol = 1;
+      // 每小节内容真实所需宽（拍格横向排开的自然宽，不受当前压缩影响）
+      const need = measures.map(m => {
         const beats = m.querySelectorAll('.beat');
-        const n = beats.length || 1;
-        let maxBeat = 0, sum = 0;
+        let sum = 0;
         beats.forEach(b => {
           const c = b.querySelector('.measure-chord');
-          const cw = c ? c.scrollWidth : 0;            // nowrap 下反映真实内容宽（即使被 overflow:hidden 裁也能量到）
+          const cw = c ? c.scrollWidth : 0;        // nowrap 下反映真实内容宽（即使被 overflow:hidden 裁也能量到）
           const bcs = getComputedStyle(b);
-          const w = cw + parseFloat(bcs.paddingLeft) + parseFloat(bcs.paddingRight);
-          if (w > maxBeat) maxBeat = w;
-          sum += w;
+          sum += cw + parseFloat(bcs.paddingLeft) + parseFloat(bcs.paddingRight);
         });
-        if (!maxBeat) return;
         const cs = getComputedStyle(m);
         const padX = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
-        // 等宽拍格下不溢出所需最小小节宽 = 拍数 × 最宽拍；当前等宽格已满足则不处理
-        const needEqual = maxBeat * n + padX + 2;
-        if (needEqual <= m.clientWidth) return;
-        // 溢出：加宽为内容所需宽，并让拍格按内容宽度排列（紧凑），确保无裁剪
-        m.dataset.wide = '1';
-        m.style.flex = '0 0 auto';
-        m.style.width = Math.ceil(sum + padX + 2) + 'px';
-        beats.forEach(b => { b.style.flex = '0 0 auto'; });
-        changed = true;
+        return sum + padX + 2;
       });
-      if (!changed) break;
-    }
-    measures.forEach(m => { delete m.dataset.wide; });
+      const anyOverflow = need.some(nd => nd > equal + tol);
+      if (!anyOverflow) {
+        // 全部能放下：行内等分，视觉整齐
+        measures.forEach(m => { m.style.flex = '1 1 0'; m.style.flexGrow = '1'; });
+        return;
+      }
+      // 有溢出：按内容宽分配 grow（basis:0 时宽 ∝ grow，且行宽恒定 → 始终 4 小节填满整行）
+      // 溢出小节变宽、其余按相同比例变窄，整行仍保持 COUNT 个小节不变
+      measures.forEach((m, i) => {
+        m.style.flex = '1 1 0';
+        m.style.flexGrow = String(need[i] > 0 ? need[i] : equal);
+      });
+    });
   });
 }
 
@@ -750,9 +766,9 @@ function sectionHtml(s, k, val, label, inEdit) {
       '<div class="measure-beats">' + measureCellsHtml(m.num, m.chord, beats, s.key, s.ignoreDegrees) + '</div>' +
       '<div class="measure-lyrics" onclick="event.stopPropagation()"><textarea class="lyrics-input" id="lyrics-' + s.id + '-' + k + '-' + idx + '" placeholder="歌词" oninput="autoGrow(this);saveSectionLyrics(' + s.id + ',\'' + k + '\',' + idx + ',this.value)" rows="1" cols="1">' + escAttr(lyricsVal) + '</textarea></div>' +
     '</div>';
-  }).join('');
+  });
   const igTag = s.ignoreDegrees ? ' <span class="ig-tag" title="本歌已开启忽略级数：只看和弦字母">仅和弦</span>' : '';
-  return '<div class="prog-section"><span class="prog-label">' + escAttr(effLabel) + igTag + '</span><div class="prog-measures">' + cells + '</div></div>';
+  return '<div class="prog-section"><span class="prog-label">' + escAttr(effLabel) + igTag + '</span><div class="prog-measures">' + rowWrap(cells) + '</div></div>';
 }
 
 // ======================== 渲染逻辑（升级版 v3 · 精简） ========================

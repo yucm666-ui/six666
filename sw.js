@@ -2,7 +2,7 @@
 // 部署：GitHub Pages 子路径（/repo/）兼容——全部使用相对路径，注册时用 'sw.js'。
 // 重要：每次修改 app.js / index.html / style.css / songs.json 后，请把 VERSION 升一级，
 //       旧缓存会在激活时自动清理，用户下次打开即为最新版。
-const VERSION = 'songbook-v21';
+const VERSION = 'songbook-v22';
 const APP_SHELL = [
   './',
   'index.html',

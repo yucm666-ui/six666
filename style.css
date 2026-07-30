@@ -264,8 +264,8 @@
     margin-bottom: 1px;
   }
   .prog-measures {
-    display: flex;            /* 弹性：小节按屏幕宽度自动折行，视奏不必横向滚动 */
-    flex-wrap: wrap;          /* 关键：换行 —— 超出一行宽度的和弦自动落到下一行，纵向滚动浏览即可 */
+    display: flex;
+    flex-direction: column;   /* 纵向堆叠「每行4小节」的行容器；行内由 .measure-row 横向等分 */
     align-items: stretch;
     gap: 0;
     border-radius: 6px;
@@ -274,11 +274,14 @@
     background: rgba(88,166,255,0.06);
     margin-top: 1px;
   }
+  .measure-row {
+    display: flex;            /* 一行4个小节，行内不换行，等分整行宽 */
+    border-bottom: 1px dashed rgba(63,185,80,0.3);  /* 每行底部虚线分隔（自 .measure 移来） */
+  }
   .measure {
-    flex: 1 1 160px;          /* 默认目标宽 160px：每行自适应排若干小节，排不下自动换行 */
-    min-width: 110px;         /* 保底：短和弦小节不会被压到看不清 */
+    flex: 1 1 0;              /* 行内等分基准：4个小节均分整行宽；fitMeasureWidths 按内容溢出再调 grow */
+    min-width: 0;             /* 允许被同行其他小节挤窄 */
     padding: 2px 4px 0;   /* 底部留白归零：歌词栏紧贴下方虚线边界 */
-    border-bottom: 1px dashed rgba(63,185,80,0.3);
     text-align: center;
     display: flex;
     flex-direction: column;   /* 拍格区在上，歌词区在下 */
@@ -1100,7 +1103,7 @@ select.gh-token { appearance:auto; cursor:pointer; }
   .detail-body .prog-detail { padding: 6px 0; gap: 0; }
   .detail-body .prog-section { gap: 6px; }
   .detail-body .prog-label { font-size: 18px; font-weight: 700; }
-  .detail-body .measure { flex: 1 1 200px; }   /* 视奏大字：每小节目标宽 200px，每行少排几个、更清晰 */
+  .detail-body .measure { flex: 1 1 0; }   /* 视奏大字：行内等分，fitMeasureWidths 按内容溢出再放大 */
   .detail-body .measure { padding: 4px 12px 0; }   /* 底部留白归零：歌词栏紧贴边界 */
   .detail-body .measure-num { font-size: 30px; }
   .detail-body .measure-chord { font-size: 28px; }
@@ -1151,7 +1154,7 @@ select.gh-token { appearance:auto; cursor:pointer; }
   /* 和弦对照表展开：与歌曲展开和弦页保持一致的视觉（大字体/高对比/远距可读） */
   .ref-panel-body .prog-section { gap: 6px; }
   .ref-panel-body .prog-label { font-size: 18px; font-weight: 700; }
-  .ref-panel-body .measure { flex: 1 1 180px; }
+  .ref-panel-body .measure { flex: 1 1 0; }
   .ref-panel-body .measure { padding: 4px 12px 0; }
   .ref-panel-body .measure-chord { font-size: 36px; font-weight: 700; }
   .ref-panel-body .measure-num   { font-size: 32px; font-weight: 800; }
