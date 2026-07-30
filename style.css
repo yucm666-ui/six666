@@ -29,6 +29,7 @@
     color: var(--text);
     line-height: 1.6;
     padding: 0;
+    overflow-x: clip;   /* 列表页左右滑切tab时裁切横向溢出，不冒滚动条；clip不创建滚动容器，顶部sticky工具栏不受影响 */
   }
   .toolbar {
     position: sticky;

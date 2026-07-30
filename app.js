@@ -2,7 +2,7 @@
 // ======================== 应用版本号（单一数据源） ========================
 // 界面右上角与浏览器标签会显示此版本，方便平板上核对是否吃到了最新缓存。
 // 升级功能时改这一处即可，无需改别处。
-const APP_VERSION = '1.0.10';
+const APP_VERSION = '1.0.11';
 window.APP_VERSION = APP_VERSION;
 function applyVersion() {
   document.title = '工作歌单 v' + APP_VERSION;
@@ -2076,4 +2076,102 @@ function initSwipeNav() {
   dv.addEventListener('touchcancel', onEnd, { passive: true });
 }
 
+// ======================== 列表页：左右滑动切换“工作歌单 / 临时歌单” ========================
+function initTabSwipe() {
+  const dv = document.getElementById('detailView');   // 详情打开时不响应，交给切歌手势
+  const wrap = document.querySelector('.table-wrap'); // 滑动的列表内容区
+  if (!wrap) return;
+
+  // 固定层放边缘提示，保证始终屏幕居中（不随页面纵向滚动跑偏）
+  const layer = document.createElement('div');
+  layer.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:62;';
+  const hintL = document.createElement('div');
+  hintL.className = 'swipe-hint swipe-hint-left';
+  hintL.innerHTML = '<span class="sw-arrow">‹</span><span>工作歌单</span>';
+  const hintR = document.createElement('div');
+  hintR.className = 'swipe-hint swipe-hint-right';
+  hintR.innerHTML = '<span class="sw-arrow">›</span><span>临时歌单</span>';
+  layer.appendChild(hintL); layer.appendChild(hintR);
+  document.body.appendChild(layer);
+
+  const THRESHOLD = 55;   // 触发切tab的最小水平位移(px)
+  const RATIO = 1.4;      // 水平位移需明显大于垂直，才算横滑（避免误伤纵向滚动）
+  const DAMP = 0.5;       // 跟手阻尼
+  const st = { active: false, x0: 0, y0: 0, moved: false };
+
+  const hideHints = () => { hintL.style.opacity = 0; hintR.style.opacity = 0; };
+  const springBack = () => {
+    wrap.style.transition = 'transform .18s ease';
+    wrap.style.transform = 'translateX(0)';
+    hideHints();
+    setTimeout(() => { wrap.style.transition = ''; }, 220);
+  };
+
+  function onStart(e) {
+    if (dv && dv.classList.contains('open')) return;                    // 详情打开时不切tab
+    if (e.target.closest('button, input, textarea, .tab-btn, .key-btn, .toolbar')) return; // 标签页/搜索/调号栏不响应
+    const p = e.touches ? e.touches[0] : e;
+    st.active = true; st.moved = false;
+    st.x0 = p.clientX; st.y0 = p.clientY;
+  }
+  function onMove(e) {
+    if (!st.active) return;
+    const p = e.touches ? e.touches[0] : e;
+    const dx = p.clientX - st.x0;
+    const dy = p.clientY - st.y0;
+    if (!st.moved) {
+      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;                  // 未达最小移动量
+      if (Math.abs(dx) > Math.abs(dy) * RATIO) {                         // 锁定为横向手势
+        st.moved = true;
+        if (e.cancelable) e.preventDefault();
+      } else {                                                           // 更像纵向滚动，交还浏览器
+        st.active = false;
+        return;
+      }
+    }
+    if (e.cancelable) e.preventDefault();
+    wrap.style.transition = 'none';
+    wrap.style.transform = 'translateX(' + (dx * DAMP) + 'px)';
+    const prog = Math.min(1, Math.abs(dx) / THRESHOLD);
+    if (dx < 0) { hintR.style.opacity = prog; hintL.style.opacity = 0; } // 左滑→临时歌单(右提示)
+    else { hintL.style.opacity = prog; hintR.style.opacity = 0; }        // 右滑→工作歌单(左提示)
+  }
+  function onEnd(e) {
+    if (!st.active) return;
+    st.active = false;
+    if (!st.moved) return;
+    const p = e.changedTouches ? e.changedTouches[0] : e;
+    const dx = p.clientX - st.x0;
+    const dy = p.clientY - st.y0;
+    if (Math.abs(dx) <= THRESHOLD || Math.abs(dx) <= Math.abs(dy) * RATIO) { springBack(); return; }
+
+    const dir = dx < 0 ? 1 : -1;          // 左滑(1)→下一tab(临时歌单)；右滑(-1)→上一tab(工作歌单)
+    const target = dir > 0 ? 'temp' : 'main';
+    if (currentTab === target) { springBack(); return; }   // 已在目标tab，不切、回弹
+
+    // 滑出旧列表 → 切tab → 新列表从对侧滑入
+    const outX = (dir > 0 ? -1 : 1) * Math.min(window.innerWidth, 1200);
+    wrap.style.transition = 'transform .2s ease';
+    wrap.style.transform = 'translateX(' + outX + 'px)';
+    hideHints();
+    setTimeout(() => {
+      switchTab(target);
+      wrap.style.transition = 'none';
+      wrap.style.transform = 'translateX(0)';
+      wrap.style.transform = 'translateX(' + (-outX) + 'px)';
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        wrap.style.transition = 'transform .2s ease';
+        wrap.style.transform = 'translateX(0)';
+        setTimeout(() => { wrap.style.transition = ''; }, 220);
+      }));
+    }, 200);
+  }
+
+  document.addEventListener('touchstart', onStart, { passive: true });
+  document.addEventListener('touchmove', onMove, { passive: false });
+  document.addEventListener('touchend', onEnd, { passive: true });
+  document.addEventListener('touchcancel', onEnd, { passive: true });
+}
+
 initSwipeNav();
+initTabSwipe();
