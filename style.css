@@ -255,19 +255,19 @@
     margin-bottom: 1px;
   }
   .prog-measures {
-    display: flex;            /* 单行弹性：小节等宽排列；太挤的小节被 fitMeasureWidths 单独加宽，其余等分会收缩让位 */
-    flex-wrap: nowrap;        /* 不换行 → 不会有"每行末尾空挡" */
+    display: flex;            /* 弹性：小节按屏幕宽度自动折行，视奏不必横向滚动 */
+    flex-wrap: wrap;          /* 关键：换行 —— 超出一行宽度的和弦自动落到下一行，纵向滚动浏览即可 */
     align-items: stretch;
     gap: 0;
     border-radius: 6px;
-    overflow-x: auto;         /* 极端情况（每小节都长）才出现横向滚动；通常单行装得下 */
+    /* 移除 overflow-x：视奏页面坚决不横向滚动 */
     border: 1px solid rgba(88,166,255,0.2);
     background: rgba(88,166,255,0.06);
     margin-top: 1px;
   }
   .measure {
-    flex: 1 1 120px;          /* 等宽弹性：默认均分一行；被加宽的小节会被设为固定宽，其余收缩让位 */
-    min-width: 120px;         /* 保底：短和弦小节不会被压到看不清 */
+    flex: 1 1 160px;          /* 默认目标宽 160px：每行自适应排若干小节，排不下自动换行 */
+    min-width: 110px;         /* 保底：短和弦小节不会被压到看不清 */
     padding: 2px 4px 0;   /* 底部留白归零：歌词栏紧贴下方虚线边界 */
     border-bottom: 1px dashed rgba(63,185,80,0.3);
     text-align: center;
@@ -680,8 +680,7 @@
   @media (max-width: 700px) {
     .prog-detail { flex-direction: column; }
     .prog-section { min-width: auto; }
-    .prog-measures { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .measure:nth-child(2n) { border-right: none; }
+    /* 自适应列：flex-wrap 自动换行，不再固定 2 列 */
   }
 
 /* ===== 升级：节拍器 / 和弦提示 / 拖拽（精简版） ===== */
@@ -798,8 +797,7 @@ select.gh-token { appearance:auto; cursor:pointer; }
   .measure-chord { font-size: 20px; }
   .measure-chord small { font-size: 0.72em; }
 
-  /* 小节网格：自适应，每个小节最小 140px */
-  .prog-measures { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+  /* 小节网格：flex-wrap 自动换行，每小节默认 160px（见 .measure 基础规则） */
 
   /* 详情栏 */
   .detail-bar { padding: 6px 12px; }
@@ -824,7 +822,7 @@ select.gh-token { appearance:auto; cursor:pointer; }
   .prog-detail { padding: 8px 10px; gap: 16px; }
   .prog-section { min-width: auto; }
   .prog-label { font-size: 16px; font-weight: 700; }
-  .prog-measures { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+  /* 小节网格：flex-wrap 自动换行（基础 160px） */
   .measure-num { font-size: 26px; letter-spacing: 2px; }
   .measure-chord { font-size: 24px; letter-spacing: 1.5px; }
   .measure { padding: 3px 10px 0; }   /* 底部留白归零：歌词栏紧贴下方虚线边界 */
@@ -845,7 +843,6 @@ select.gh-token { appearance:auto; cursor:pointer; }
   .detail-close { font-size: 10px; padding: 3px 6px; }
   .detail-body { padding: 8px 10px 60px; }
   .detail-body .prog-label { font-size: 20px; }
-  .detail-body .prog-measures { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
   .detail-body .measure-num { font-size: 36px; }
   .detail-body .measure-chord { font-size: 34px; }
 
@@ -1066,7 +1063,7 @@ select.gh-token { appearance:auto; cursor:pointer; }
   .detail-body .prog-detail { padding: 6px 0; gap: 0; }
   .detail-body .prog-section { gap: 6px; }
   .detail-body .prog-label { font-size: 18px; font-weight: 700; }
-  .detail-body .prog-measures { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+  .detail-body .measure { flex: 1 1 200px; }   /* 视奏大字：每小节目标宽 200px，每行少排几个、更清晰 */
   .detail-body .measure { padding: 4px 12px 0; }   /* 底部留白归零：歌词栏紧贴边界 */
   .detail-body .measure-num { font-size: 30px; }
   .detail-body .measure-chord { font-size: 28px; }
@@ -1117,7 +1114,7 @@ select.gh-token { appearance:auto; cursor:pointer; }
   /* 和弦对照表展开：与歌曲展开和弦页保持一致的视觉（大字体/高对比/远距可读） */
   .ref-panel-body .prog-section { gap: 6px; }
   .ref-panel-body .prog-label { font-size: 18px; font-weight: 700; }
-  .ref-panel-body .prog-measures { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+  .ref-panel-body .measure { flex: 1 1 180px; }
   .ref-panel-body .measure { padding: 4px 12px 0; }
   .ref-panel-body .measure-chord { font-size: 36px; font-weight: 700; }
   .ref-panel-body .measure-num   { font-size: 32px; font-weight: 800; }
