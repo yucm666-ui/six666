@@ -2,7 +2,7 @@
 // ======================== 应用版本号（单一数据源） ========================
 // 界面右上角与浏览器标签会显示此版本，方便平板上核对是否吃到了最新缓存。
 // 升级功能时改这一处即可，无需改别处。
-const APP_VERSION = '1.0.3';
+const APP_VERSION = '1.0.4';
 function applyVersion() {
   document.title = '工作歌单 v' + APP_VERSION;
   const el = document.getElementById('appVersion');
@@ -1472,18 +1472,26 @@ function saveChordEdit(id) {
     render();
     return;
   }
-  // 推导级数始终按和弦字母自动识别（平局优先原调）；原调仅作为“转调默认调”，不参与重定价
-  const key = detectKeyFromLetters(combined, preferKey);
-  if (!key) {
-    alert('无法识别调性，请检查输入的和弦名称是否正确（如 C、Am、G7、F#m、C/G 等）。');
-    return;
+  // 忽略级数歌：数据本就是字母和弦，不做级数推导——否则 °m7/maj7/转位/混合升KEY段
+  // 会被 deduceDegrees 推导失败或错乱，且转成数字级数后会破坏半音变调通道，导致和弦消失。
+  // 普通歌：推导级数始终按和弦字母自动识别（平局优先原调）；原调仅作为“转调默认调”，不参与重定价。
+  let key;
+  if (song.ignoreDegrees) {
+    key = minorToMajor[song.key] || song.key;
+  } else {
+    key = detectKeyFromLetters(combined, preferKey);
+    if (!key) {
+      alert('无法识别调性，请检查输入的和弦名称是否正确（如 C、Am、G7、F#m、C/G 等）。');
+      return;
+    }
   }
   const newProg = {};
   const nm = {};
   allKeys.forEach(k => {
     const ta = document.getElementById('edit-' + id + '-' + k);
     const letterStr = ta ? ta.value.trim() : (cur[k] || '');
-    newProg[k] = letterStr ? deriveDegrees(letterStr, key) : ''; // 空模块（仅命名）也保留为空串
+    // 忽略级数歌原样保留字母（其变调走半音平移通道，依赖字母数据）；普通歌反推数字级数
+    newProg[k] = letterStr ? (song.ignoreDegrees ? letterStr : deriveDegrees(letterStr, key)) : ''; // 空模块（仅命名）也保留为空串
     const lab = document.getElementById('label-' + id + '-' + k);
     const labVal = lab ? lab.value.trim() : getSectionName(song, k, '');
     const def = (k.indexOf('prog') === 0) ? '' : (sectionNames[k] || '模块');
