@@ -2,7 +2,7 @@
 // 部署：GitHub Pages 子路径（/repo/）兼容——全部使用相对路径，注册时用 'sw.js'。
 // 重要：每次修改 app.js / index.html / style.css / songs.json 后，请把 VERSION 升一级，
 //       旧缓存会在激活时自动清理，用户下次打开即为最新版。
-const VERSION = 'songbook-v19';
+const VERSION = 'songbook-v20';
 const APP_SHELL = [
   './',
   'index.html',
@@ -13,18 +13,31 @@ const APP_SHELL = [
   'icon-512.png'
 ];
 const DATA_URL = 'songs.json'; // 数据文件：在线永远拿最新，离线回退上次缓存
+// 关键资源：缺失任意一个都会导致页面无法渲染（卡开屏/白屏），预缓存时必须重试确保到位
+const CRITICAL = ['./', 'index.html', 'style.css', 'app.js'];
 
 self.addEventListener('install', e => {
-  e.waitUntil(
-    caches.open(VERSION)
-      // 逐个缓存并容忍个别失败（如图标临时 404）：避免一个资源坏掉导致整个离线功能报废
-      .then(c => Promise.allSettled(APP_SHELL.concat([DATA_URL]).map(u => c.add(u))))
-      .then(results => {
-        const failed = results.filter(r => r.status === 'rejected').length;
-        if (failed) console.warn('SW 预缓存有 ' + failed + ' 个资源失败（已跳过）');
-      })
-      .then(() => self.skipWaiting())
-  );
+  e.waitUntil((async () => {
+    const cache = await caches.open(VERSION);
+    // 关键资源：最多重试 3 次，确保 index.html/app.js/style.css 一定入库
+    let criticalOk = true;
+    for (const u of CRITICAL) {
+      let ok = false;
+      for (let attempt = 0; attempt < 3 && !ok; attempt++) {
+        try { await cache.add(u); ok = true; }
+        catch (err) { console.warn('[SW] 关键资源预缓存重试', u, '尝试', attempt + 1, err); }
+      }
+      if (!ok) criticalOk = false;
+    }
+    if (!criticalOk) console.warn('[SW] 关键资源预缓存仍失败（设备可能离线），本次更新暂不激活，保留旧版可用');
+    // 非关键资源（图标/manifest/数据）容忍个别失败
+    await Promise.allSettled(
+      APP_SHELL.filter(u => !CRITICAL.includes(u)).concat([DATA_URL]).map(u => cache.add(u))
+    );
+    // 仅当关键资源全部就绪才激活新 SW；否则保留旧版（避免“删旧缓存+新缓存残缺”导致白屏）
+    // 注意：若本次因离线未激活，下次在线打开时浏览器会重新安装并正常激活
+    if (criticalOk) await self.skipWaiting();
+  })());
 });
 
 self.addEventListener('activate', e => {
@@ -36,26 +49,42 @@ self.addEventListener('activate', e => {
   );
 });
 
+// 导航/数据：network-first（先拿网络最新版，失败再回退缓存）——根治“更新后缓存残缺卡开屏”
+function networkFirst(req, cacheKey) {
+  return caches.open(VERSION).then(cache =>
+    fetch(req).then(res => {
+      if (res.ok) cache.put(cacheKey || req, res.clone());
+      return res;
+    }).catch(() => {
+      const key = cacheKey || req;
+      return caches.match(key, { ignoreSearch: true })
+        .then(hit => hit || cache.match(req, { ignoreSearch: true }))
+        .then(h => h || Promise.reject('offline-and-no-cache'));
+    })
+  );
+}
+
 self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return; // 保存到 GitHub 的 PUT 等请求直连网络
   const url = new URL(req.url);
   if (url.origin !== location.origin) return; // api.github.com 等跨域请求直连网络
 
+  const path = url.pathname;
+
   // 数据文件：network-first。页面 fetch 带 ?t=时间戳，缓存 key 统一用裸路径，避免堆积
-  if (url.pathname.endsWith('/' + DATA_URL) || url.pathname === '/' + DATA_URL) {
-    e.respondWith(
-      caches.open(VERSION).then(cache =>
-        fetch(req).then(res => {
-          if (res.ok) cache.put(DATA_URL, res.clone());
-          return res;
-        }).catch(() => cache.match(DATA_URL).then(hit => hit || cache.match(req, { ignoreSearch: true })))
-      )
-    );
+  if (path.endsWith('/' + DATA_URL) || path === '/' + DATA_URL) {
+    e.respondWith(networkFirst(req, DATA_URL));
     return;
   }
 
-  // 应用外壳（html/css/js/图标）：cache-first，未命中回源并写入缓存
+  // 页面导航：network-first，保证永远先取最新 HTML，杜绝“坏缓存把应用砖了”
+  if (req.mode === 'navigate' || path.endsWith('/') || path.endsWith('/index.html')) {
+    e.respondWith(networkFirst(req, null));
+    return;
+  }
+
+  // 其它外壳资源(css/js/图标)：cache-first + 回源写入（离线秒开，在线自动更新）
   e.respondWith(
     caches.match(req, { ignoreSearch: true }).then(hit => hit || fetch(req).then(res => {
       if (res.ok && res.type === 'basic') {
@@ -63,6 +92,6 @@ self.addEventListener('fetch', e => {
         caches.open(VERSION).then(c => c.put(req, copy));
       }
       return res;
-    }))
+    }).catch(() => hit || caches.match(req)))
   );
 });
