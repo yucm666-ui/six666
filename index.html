@@ -264,6 +264,7 @@
   <div class="detail-bar">
     <div class="detail-title" id="detailTitle"><span class="detail-name">真的爱你</span><span class="detail-meta"><span class="dm-chip"><i>原调</i><b>C</b></span><span class="dm-chip"><i>男调</i><b>C</b></span><span class="dm-chip"><i>女调</i><b>F</b></span><span class="dm-chip"><i>速度</i><b>82</b></span><span class="dm-chip"><i>拍号</i><b>4/4</b></span></span></div>
     <div class="detail-actions">
+      <button class="btn outline icon-btn" id="songPlayBtn" title="歌曲播放" aria-label="歌曲播放" onclick="toggleSongPlayer()"><svg viewBox="0 0 24 24" class="ic" aria-hidden="true"><path d="M9 18V5l11-2v13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="6" cy="18" r="3" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17" cy="16" r="3" fill="none" stroke="currentColor" stroke-width="2"/></svg></button>
       <button class="btn outline icon-btn" id="prevSong" title="上一首" aria-label="上一首" onclick="navigateSong(-1)"><svg viewBox="0 0 24 24" class="ic" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       <button class="btn outline icon-btn" id="nextSong" title="下一首" aria-label="下一首" onclick="navigateSong(1)"><svg viewBox="0 0 24 24" class="ic" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       <button class="btn outline icon-btn" id="editToggle" title="编辑：修改字母和弦、模块名称，或新增模块，保存后自动推导级数" aria-label="编辑" onclick="toggleEditMode()"><svg viewBox="0 0 24 24" class="ic" aria-hidden="true"><path d="M4 20h4L18.5 9.5a2.12 2.12 0 0 0-3-3L5 17v3z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M13.5 7.5l3 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
@@ -303,15 +304,35 @@
     <button class="outline" onclick="metroTap()">点按测速</button>
   </div>
   <div class="metro-beat" id="metroBeat"><span class="bdot b-strong"></span><span class="bdot b-weak"></span><span class="bdot b-weak"></span><span class="bdot b-weak"></span></div>
-  <div class="metro-audio">
-    <div class="metro-audio-head"><span>🎶 歌曲播放</span><button id="audioOpenBtn" class="metro-audio-open" type="button">打开</button><input type="file" id="audioFile" accept="audio/*" hidden></div>
-    <div id="audioName" class="metro-audio-name">未选择音频</div>
-    <div class="metro-seek-row"><span id="audioCur" class="metro-time">0:00</span><input type="range" id="audioSeek" min="0" max="1000" value="0" step="1"><span id="audioDur" class="metro-time">0:00</span></div>
-    <div class="metro-audio-ctrl"><button type="button" onclick="audioRestart()">⏮ 从头</button><button id="audioPlay" type="button" onclick="audioToggle()">▶ 播放</button></div>
-    <div class="metro-rate-row"><span class="metro-rate-label">变速</span><input type="range" id="audioRate" min="0" max="100" value="80" step="1"><span id="audioRateVal" class="metro-rate-val">1.00x</span></div>
-  </div>
 </div>
 <audio id="localAudio" preload="metadata" playsinline></audio>
+
+<!-- 单首歌曲播放窗口（整合进和弦详情页；关闭窗口仍后台播放；宽度与平板同宽） -->
+<div class="song-player" id="songPlayer" style="display:none;">
+  <div class="song-player-bar">
+    <span class="song-player-title">🎶 歌曲播放</span>
+    <span id="playerSongName" class="song-player-song"></span>
+    <button class="song-player-x" type="button" onclick="closeSongPlayer()" aria-label="收起播放窗口">×</button>
+  </div>
+  <div id="audioName" class="song-player-file">未选择音频</div>
+  <div class="song-player-seek">
+    <span id="audioCur" class="song-player-time">0:00</span>
+    <input type="range" id="audioSeek" class="song-player-range" min="0" max="1000" value="0" step="1">
+    <span id="audioDur" class="song-player-time">0:00</span>
+  </div>
+  <div class="song-player-ctrl">
+    <button id="audioPlay" type="button" onclick="audioToggle()">▶ 播放</button>
+    <button type="button" onclick="audioRestart()">⏮ 从头</button>
+    <button id="audioOpenBtn" type="button" onclick="audioOpenClick()">📂 打开</button>
+  </div>
+  <input type="file" id="audioFile" accept="audio/*" hidden>
+  <div class="song-player-rate">
+    <span class="song-player-rate-label">变速</span>
+    <input type="range" id="audioRate" min="0" max="100" value="80" step="1">
+    <span id="audioRateVal" class="song-player-rate-val">1.00x</span>
+    <button id="audioRateReset" type="button" class="song-player-reset" onclick="audioRateReset()">↺ 原速</button>
+  </div>
+</div>
 <div id="chordTip" class="chord-tip"></div>
 
 <div class="export-mask" id="exportMask" onclick="if(event.target===this)closeExportModal()">

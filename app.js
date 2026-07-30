@@ -2,7 +2,7 @@
 // ======================== 应用版本号（单一数据源） ========================
 // 界面右上角与浏览器标签会显示此版本，方便平板上核对是否吃到了最新缓存。
 // 升级功能时改这一处即可，无需改别处。
-const APP_VERSION = '1.0.15';
+const APP_VERSION = '1.0.16';
 window.APP_VERSION = APP_VERSION;
 function applyVersion() {
   document.title = '工作歌单 v' + APP_VERSION;
@@ -1038,8 +1038,7 @@ function saveToGitHub() {
         sectionNotes: mergedNotes,
         sectionLyrics: mergedLyrics,
         // 临时歌单：本地改过才覆盖远程，否则保留远程（他人可能更新过）
-        tempList: (!_eq(tempList, _initSnap.tempList) || !Array.isArray(remoteData.tempList)) ? tempList.slice() : remoteData.tempList.slice(),
-        audioMeta: audioMeta || (remoteData.audioMeta || null)   // 本地歌曲播放元信息（文件名/变速/进度）
+        tempList: (!_eq(tempList, _initSnap.tempList) || !Array.isArray(remoteData.tempList)) ? tempList.slice() : remoteData.tempList.slice()
       };
       return fetch(SONGS_API, {
         method: 'PUT',
@@ -1055,7 +1054,6 @@ function saveToGitHub() {
       // 保存成功后直接用合并数据更新内存并重新渲染（无需刷新页面，绕过 CDN 缓存）
       songs = merged.songs;
       progMap = merged.progMap;
-      audioMeta = merged.audioMeta || audioMeta;
       // 同步临时歌单（本地没改时 merged 里是远程值，可能含他人更新）
       if (Array.isArray(merged.tempList)) tempList = merged.tempList.slice();
       // 同步备注：用合并后的 sectionNotes 更新内存
@@ -1227,6 +1225,7 @@ function toggleProg(id) {
   if (song.bpm) setMetroBpm(song.bpm);
   openDetail();
   renderRefPanel();
+  loadSongPlayer(currentDetailId);   // 载入该歌专属的播放信息（无则显示"未选择音频"）
 }
 // 打开详情区：隐藏列表、显示铺满锁定行以下的全屏和弦页
 function openDetail() {
@@ -1309,6 +1308,11 @@ function renderDetail() {
 // 关闭详情区，回到歌曲列表；silent=true 时跳过重渲染（由调用方统一渲染，如 switchTab）
 function closeDetail(silent) {
   const id = currentDetailId;
+  // 收起播放窗口并停止该歌播放（离开歌曲即视为停止；关闭播放窗口本身仍后台播放）
+  const sp = document.getElementById('songPlayer');
+  if (sp) sp.style.display = 'none';
+  const audio = document.getElementById('localAudio');
+  if (audio) { try { audio.pause(); } catch (e) {} }
   const dv = document.getElementById('detailView');
   const tw = document.querySelector('.table-wrap');
   if (tw) tw.style.display = '';
@@ -1754,15 +1758,16 @@ function metroTap() {
   }
 }
 
-// ======================== 节拍器内：本地歌曲播放（支持后台播放） ========================
-// 持久化策略：
-//  - 音频二进制存 IndexedDB（key=lastLocalAudio），刷新/版本更新（SW 清的是 CacheStorage，不动 IndexedDB）都不丢 → 满足"更新版本后不丢失"
-//  - 文件名/变速/进度等元信息同时写 localStorage（即时备份）并随"保存到 GitHub"进 songs.json.audioMeta
-let audioMeta = null;            // {name, rate, time, size}
+// ======================== 单首歌曲播放（整合进和弦详情页，支持后台播放） ========================
+// 持久化策略（按"当前打开的歌曲"维度）：
+//  - 音频二进制 + 元信息存 IndexedDB，key = 'audio_' + songId → Service Worker 升级清的是 CacheStorage，IndexedDB 不动，故"更新版本后不丢失"
+//  - 元信息（文件名/变速/进度）同时写进该 song 对象（songs[i].audioMeta），随"保存到 GitHub"一起进 songs.json，跨设备/换机也能记住是哪首文件
 let _audioUrl = null;            // 当前 objectURL（revoke 用）
+let _playerSongId = null;        // 播放器当前已加载的歌曲 id（避免同一首重复加载）
 const AUDIO_DB = 'six666Audio';
 const AUDIO_STORE = 'records';
-const AUDIO_KEY = 'lastLocalAudio';
+function audioKeyFor(id) { return 'audio_' + (id || 'none'); }
+function currentSong() { return songs.find(s => s.id === currentDetailId) || null; }
 
 function openAudioDB() {
   return new Promise((resolve, reject) => {
@@ -1775,18 +1780,18 @@ function openAudioDB() {
     req.onerror = () => reject(req.error);
   });
 }
-function putAudioRecord(rec) {
+function putAudioRecord(key, rec) {
   return openAudioDB().then(db => new Promise((res, rej) => {
     const tx = db.transaction(AUDIO_STORE, 'readwrite');
-    tx.objectStore(AUDIO_STORE).put(rec, AUDIO_KEY);
+    tx.objectStore(AUDIO_STORE).put(rec, key);
     tx.oncomplete = () => { db.close(); res(); };
     tx.onerror = () => { db.close(); rej(tx.error); };
   }));
 }
-function getAudioRecord() {
+function getAudioRecord(key) {
   return openAudioDB().then(db => new Promise((res, rej) => {
     const tx = db.transaction(AUDIO_STORE, 'readonly');
-    const r = tx.objectStore(AUDIO_STORE).get(AUDIO_KEY);
+    const r = tx.objectStore(AUDIO_STORE).get(key);
     r.onsuccess = () => { db.close(); res(r.result || null); };
     r.onerror = () => { db.close(); rej(r.error); };
   }));
@@ -1798,17 +1803,24 @@ function fmtTime(s) {
   s = Math.floor(s);
   return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
 }
-let _audioMetaTimer = null;
-function persistAudioMeta() {
-  // 写入 localStorage 即时备份
-  try { if (audioMeta) localStorage.setItem('audio_meta', JSON.stringify(audioMeta)); } catch (e) {}
+let _audioStateTimer = null;
+function persistAudioState() {
+  const song = currentSong();
+  if (!song) return;
+  if (!song.audioMeta) song.audioMeta = { name: '' };
+  const audio = document.getElementById('localAudio');
+  if (audio) {
+    song.audioMeta.time = audio.currentTime || 0;
+    song.audioMeta.rate = audio.playbackRate || (song.audioMeta.rate || 1);
+  }
+  const key = audioKeyFor(song.id);
   // 防抖写回 IndexedDB（保留已有 blob，只更新 meta）
-  if (_audioMetaTimer) clearTimeout(_audioMetaTimer);
-  _audioMetaTimer = setTimeout(() => {
-    getAudioRecord().then(rec => {
-      rec = rec || { meta: {} };
-      rec.meta = audioMeta || rec.meta || {};
-      return putAudioRecord(rec);
+  if (_audioStateTimer) clearTimeout(_audioStateTimer);
+  _audioStateTimer = setTimeout(() => {
+    getAudioRecord(key).then(rec => {
+      rec = rec || { blob: null };
+      rec.meta = song.audioMeta;
+      return putAudioRecord(key, rec);
     }).catch(() => {});
   }, 700);
 }
@@ -1822,10 +1834,12 @@ function audioOpenClick() {
   const f = document.getElementById('audioFile');
   if (f) f.click();
 }
-// 选择本地音频文件
+// 选择本地音频文件（存入"当前歌曲"专属槽位）
 function audioFileChange(e) {
   const file = e.target.files && e.target.files[0];
   if (!file) return;
+  const song = currentSong();
+  if (!song) return;
   const audio = document.getElementById('localAudio');
   const nameEl = document.getElementById('audioName');
   if (!audio) return;
@@ -1835,10 +1849,12 @@ function audioFileChange(e) {
   if (nameEl) nameEl.textContent = file.name;
   const rateEl = document.getElementById('audioRate');
   const rate = rateEl ? rateFromSlider(+rateEl.value) : 1;
-  audioMeta = { name: file.name, rate: rate, time: 0, size: file.size };
-  // 持久化：IndexedDB 存二进制 + meta；localStorage 存 meta
-  putAudioRecord({ blob: file, meta: audioMeta, savedAt: Date.now() }).catch(() => {});
-  persistAudioMeta();
+  song.audioMeta = { name: file.name, rate: rate, time: 0, size: file.size };
+  _playerSongId = song.id;
+  // 二进制 + meta 存进该歌专属 IndexedDB；song.audioMeta 同时进 songs 数组（随 GitHub 保存）
+  putAudioRecord(audioKeyFor(song.id), { blob: file, meta: song.audioMeta, savedAt: Date.now() }).catch(() => {});
+  const sn = document.getElementById('playerSongName');
+  if (sn) sn.textContent = song.name || '';
   maybeSaveAudioMeta();
   audio.play().then(updateAudioPlayBtn).catch(() => {});
   updateAudioPlayBtn();
@@ -1866,7 +1882,8 @@ function audioOnTimeUpdate() {
     const cur = document.getElementById('audioCur');
     if (cur) cur.textContent = fmtTime(audio.currentTime);
   }
-  if (audioMeta) { audioMeta.time = audio.currentTime; persistAudioMeta(); }
+  const song = currentSong();
+  if (song && song.audioMeta) { song.audioMeta.time = audio.currentTime; persistAudioState(); }
 }
 function audioOnSeek() {
   const audio = document.getElementById('localAudio');
@@ -1884,15 +1901,91 @@ function audioOnRate() {
   audio.playbackRate = r;
   const rv = document.getElementById('audioRateVal');
   if (rv) rv.textContent = r.toFixed(2) + 'x';
-  if (audioMeta) { audioMeta.rate = r; persistAudioMeta(); }
+  const song = currentSong();
+  if (song) { if (!song.audioMeta) song.audioMeta = { name: '' }; song.audioMeta.rate = r; persistAudioState(); }
+}
+// 一键回到原速（拉杆 80% 处 = 1.00x）
+function audioRateReset() {
+  const rate = document.getElementById('audioRate');
+  if (rate) { rate.value = 80; audioOnRate(); }
 }
 function audioOnEnded() { updateAudioPlayBtn(); }
-// 有 GitHub Token 时，选完文件自动把元信息（文件名/变速/进度）写进 songs.json.audioMeta
+// 有 GitHub Token 时，选完文件自动把元信息写进该歌 song.audioMeta（随 songs.json 保存）
 function maybeSaveAudioMeta() {
   const tok = localStorage.getItem('gh_token');
   if (tok) saveToGitHub();
 }
-// 初始化并恢复上一次打开的文件（来自 IndexedDB，版本更新后仍在）
+// 打开/切歌时：把播放器内容载入"当前歌曲"专属的音频与元信息
+function loadSongPlayer(songId) {
+  const audio = document.getElementById('localAudio');
+  if (!audio) return;
+  const song = songs.find(s => s.id === songId) || null;
+  const nameEl = document.getElementById('audioName');
+  const sn = document.getElementById('playerSongName');
+  if (sn) sn.textContent = song ? (song.name || '') : '';
+  // 停掉上一段并清空
+  try { audio.pause(); } catch (e) {}
+  if (_audioUrl) { URL.revokeObjectURL(_audioUrl); _audioUrl = null; }
+  audio.removeAttribute('src');
+  audio.load();
+  if (nameEl) nameEl.textContent = '未选择音频';
+  // 拉杆初始为该歌保存的变速（默认原速）；有 blob 再覆盖
+  let r = 1;
+  if (song && song.audioMeta && typeof song.audioMeta.rate === 'number') r = song.audioMeta.rate;
+  const rate = document.getElementById('audioRate');
+  if (rate) {
+    rate.value = sliderFromRate(r);
+    audio.playbackRate = r;
+    const rv = document.getElementById('audioRateVal');
+    if (rv) rv.textContent = r.toFixed(2) + 'x';
+  }
+  updateAudioPlayBtn();
+  _playerSongId = songId;
+  if (!song || !song.audioMeta || !song.audioMeta.name) return;  // 该歌没有任何音频记录
+  // 从该歌专属 IndexedDB 取二进制
+  getAudioRecord(audioKeyFor(songId)).then(rec => {
+    if (rec && rec.blob) {
+      if (_audioUrl) URL.revokeObjectURL(_audioUrl);
+      _audioUrl = URL.createObjectURL(rec.blob);
+      audio.src = _audioUrl;
+      if (nameEl) nameEl.textContent = (rec.meta && rec.meta.name) || song.audioMeta.name;
+      // 还原变速
+      const rr = (song.audioMeta.rate) || 1;
+      if (rate) { rate.value = sliderFromRate(rr); audio.playbackRate = rr; const rv = document.getElementById('audioRateVal'); if (rv) rv.textContent = rr.toFixed(2) + 'x'; }
+      // 还原进度
+      const t = song.audioMeta.time || 0;
+      if (t > 0) {
+        audio.addEventListener('loadedmetadata', () => {
+          try { if (audio.duration) audio.currentTime = Math.min(t, audio.duration); } catch (e) {}
+          const cur = document.getElementById('audioCur');
+          if (cur) cur.textContent = fmtTime(audio.currentTime);
+        }, { once: true });
+      }
+      updateAudioPlayBtn();
+    } else {
+      // 有文件名但本地无二进制（如换机/清缓存）：提示重新打开
+      if (nameEl) nameEl.textContent = song.audioMeta.name + '（需重新打开）';
+      updateAudioPlayBtn();
+    }
+  }).catch(() => { updateAudioPlayBtn(); });
+}
+// 打开/收起播放窗口（收起仍后台播放）
+function toggleSongPlayer() {
+  const p = document.getElementById('songPlayer');
+  if (!p) return;
+  if (p.style.display === 'none' || !p.style.display) {
+    p.style.display = 'flex';
+    if (_playerSongId !== currentDetailId) loadSongPlayer(currentDetailId);  // 切到当前歌专属内容
+  } else {
+    p.style.display = 'none';
+  }
+}
+function closeSongPlayer() {
+  const p = document.getElementById('songPlayer');
+  if (p) p.style.display = 'none';
+  // 不暂停：后台继续播放
+}
+// 初始化：仅绑定事件；具体某歌的音频在打开/切歌时由 loadSongPlayer 载入
 function initAudioPlayer() {
   const audio = document.getElementById('localAudio');
   if (!audio) return;
@@ -1900,7 +1993,6 @@ function initAudioPlayer() {
   const openBtn = document.getElementById('audioOpenBtn');
   const seek = document.getElementById('audioSeek');
   const rate = document.getElementById('audioRate');
-  const nameEl = document.getElementById('audioName');
   if (openBtn) openBtn.addEventListener('click', audioOpenClick);
   if (fileInput) fileInput.addEventListener('change', audioFileChange);
   audio.addEventListener('timeupdate', audioOnTimeUpdate);
@@ -1918,38 +2010,6 @@ function initAudioPlayer() {
     if (rv) rv.textContent = r.toFixed(2) + 'x';
   }
   updateAudioPlayBtn();
-  // 恢复上次文件（IndexedDB）
-  getAudioRecord().then(rec => {
-    if (!rec || !rec.blob) {
-      // IndexedDB 无记录时，尝试 localStorage 里记的元信息（仅显示文件名，无音频需重新选择）
-      try {
-        const m = JSON.parse(localStorage.getItem('audio_meta') || 'null');
-        if (m && m.name && nameEl) nameEl.textContent = m.name + '（需重新打开）';
-      } catch (e) {}
-      return;
-    }
-    if (_audioUrl) URL.revokeObjectURL(_audioUrl);
-    _audioUrl = URL.createObjectURL(rec.blob);
-    audio.src = _audioUrl;
-    if (nameEl) nameEl.textContent = (rec.meta && rec.meta.name) || '已恢复音频';
-    audioMeta = rec.meta ? Object.assign({}, rec.meta) : null;
-    if (rec.meta) {
-      if (typeof rec.meta.rate === 'number' && rate) {
-        rate.value = sliderFromRate(rec.meta.rate);
-        const r = rateFromSlider(+rate.value);
-        audio.playbackRate = r;
-        const rv = document.getElementById('audioRateVal');
-        if (rv) rv.textContent = r.toFixed(2) + 'x';
-      }
-      if (typeof rec.meta.time === 'number' && rec.meta.time > 0) {
-        audio.addEventListener('loadedmetadata', () => {
-          try { if (audio.duration) audio.currentTime = Math.min(rec.meta.time, audio.duration); } catch (e) {}
-          const cur = document.getElementById('audioCur');
-          if (cur) cur.textContent = fmtTime(audio.currentTime);
-        }, { once: true });
-      }
-    }
-  }).catch(() => {});
 }
 
 // ======================== 和弦悬浮提示 ========================
@@ -2091,7 +2151,6 @@ function loadDataAndInit(data) {
 
   songs = data.songs || [];
   progMap = data.progMap || {};
-  audioMeta = data.audioMeta || null;   // 恢复上次打开的本地音频元信息（文件名/变速/进度）
   if (reLoad) {
     // 本地改过元信息/对照表的歌：保留本地版本（远程新增的歌照常进来）
     if (Object.keys(editedSongById).length) songs = songs.map(rs => editedSongById[rs.id] || rs);
