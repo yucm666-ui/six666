@@ -2,7 +2,7 @@
 // ======================== 应用版本号（单一数据源） ========================
 // 界面右上角与浏览器标签会显示此版本，方便平板上核对是否吃到了最新缓存。
 // 升级功能时改这一处即可，无需改别处。
-const APP_VERSION = '1.0.5';
+const APP_VERSION = '1.0.6';
 function applyVersion() {
   document.title = '工作歌单 v' + APP_VERSION;
   const el = document.getElementById('appVersion');
@@ -725,7 +725,10 @@ function sectionHtml(s, k, val, label, inEdit) {
 
   if (inEdit && !s.pinned) {
     // 编辑模式：模块名称可输入、和弦以字母形式可改；空模块也渲染以便新增/命名
-    const baseKey = minorToMajor[s.key] || s.key;
+    // 忽略级数歌：编辑框显示「当前视奏选调」的字母（所见即所得：点 E 选调进编辑框即 E 调），
+    // 改原调时 saveChordEdit 按 (新原调−当前选调) 把编辑框内容平移到新基准，与显示自洽；
+    // 普通歌：编辑框仍显示原调字母（保持数字级数编辑习惯，不受影响）。
+    const baseKey = s.ignoreDegrees ? (minorToMajor[effectiveChordKey(s.key)] || effectiveChordKey(s.key)) : (minorToMajor[s.key] || s.key);
     const letterStr = val ? resolveChordStr(s, val, baseKey, s.key) : '';
     const editField = '<textarea class="edit-chords" id="edit-' + s.id + '-' + k + '" rows="1" oninput="autoGrow(this)">' + letterStr + '</textarea>';
     const nameField = '<input class="section-label-input" id="label-' + s.id + '-' + k + '" value="' + escAttr(effLabel) + '" placeholder="模块名称" />';
@@ -1477,9 +1480,12 @@ function saveChordEdit(id) {
   // 忽略级数歌改原调：先把整首字母和弦按 (新原调 - 旧原调) 半音差整体平移，再写回 progMap；
   // 否则只改 key 标签而和弦不动，会显示成“标 D 调却写着 C 和弦”。半音平移走 transposeLetterChord，
   // 升/降号记谱按新调调号规则，转位低音、和弦性质、升 KEY 段相对关系均保留。
-  const _oldMajor = minorToMajor[song.key] || song.key;
+  // 改原调的平移基准 = 当前视奏选调（transposeKey），而非 song.key：编辑框已显示当前选调字母，
+  // 因此只需把编辑框内容再平移 (新原调 − 当前选调) 即可落到新基准；与 sectionHtml 的显示自洽。
+  // 未点选调时 transposeKey===song.key，退化为「源数据直接平移到新原调」，行为一致。
+  const _curMajor = minorToMajor[transposeKey] || transposeKey;
   const _newMajor = minorToMajor[_newOrigKey] || _newOrigKey;
-  const _semis = (NOTE_NORM[_newMajor] != null ? NOTE_NORM[_newMajor] : 0) - (NOTE_NORM[_oldMajor] != null ? NOTE_NORM[_oldMajor] : 0);
+  const _semis = (NOTE_NORM[_newMajor] != null ? NOTE_NORM[_newMajor] : 0) - (NOTE_NORM[_curMajor] != null ? NOTE_NORM[_curMajor] : 0);
   const _shiftIgnore = song.ignoreDegrees && _semis !== 0;
   // 普通歌：推导级数始终按和弦字母自动识别（平局优先原调）；原调仅作为“转调默认调”，不参与重定价。
   let key;
