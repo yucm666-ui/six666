@@ -2,7 +2,7 @@
 // ======================== 应用版本号（单一数据源） ========================
 // 界面右上角与浏览器标签会显示此版本，方便平板上核对是否吃到了最新缓存。
 // 升级功能时改这一处即可，无需改别处。
-const APP_VERSION = '1.0.4';
+const APP_VERSION = '1.0.5';
 function applyVersion() {
   document.title = '工作歌单 v' + APP_VERSION;
   const el = document.getElementById('appVersion');
@@ -1474,6 +1474,13 @@ function saveChordEdit(id) {
   }
   // 忽略级数歌：数据本就是字母和弦，不做级数推导——否则 °m7/maj7/转位/混合升KEY段
   // 会被 deduceDegrees 推导失败或错乱，且转成数字级数后会破坏半音变调通道，导致和弦消失。
+  // 忽略级数歌改原调：先把整首字母和弦按 (新原调 - 旧原调) 半音差整体平移，再写回 progMap；
+  // 否则只改 key 标签而和弦不动，会显示成“标 D 调却写着 C 和弦”。半音平移走 transposeLetterChord，
+  // 升/降号记谱按新调调号规则，转位低音、和弦性质、升 KEY 段相对关系均保留。
+  const _oldMajor = minorToMajor[song.key] || song.key;
+  const _newMajor = minorToMajor[_newOrigKey] || _newOrigKey;
+  const _semis = (NOTE_NORM[_newMajor] != null ? NOTE_NORM[_newMajor] : 0) - (NOTE_NORM[_oldMajor] != null ? NOTE_NORM[_oldMajor] : 0);
+  const _shiftIgnore = song.ignoreDegrees && _semis !== 0;
   // 普通歌：推导级数始终按和弦字母自动识别（平局优先原调）；原调仅作为“转调默认调”，不参与重定价。
   let key;
   if (song.ignoreDegrees) {
@@ -1489,7 +1496,9 @@ function saveChordEdit(id) {
   const nm = {};
   allKeys.forEach(k => {
     const ta = document.getElementById('edit-' + id + '-' + k);
-    const letterStr = ta ? ta.value.trim() : (cur[k] || '');
+    let letterStr = ta ? ta.value.trim() : (cur[k] || '');
+    // 忽略级数歌改原调：当前段以编辑框文本为基准，整首按半音差平移到新原调
+    if (_shiftIgnore) letterStr = transposeLetterChord(letterStr, _semis, _newMajor);
     // 忽略级数歌原样保留字母（其变调走半音平移通道，依赖字母数据）；普通歌反推数字级数
     newProg[k] = letterStr ? (song.ignoreDegrees ? letterStr : deriveDegrees(letterStr, key)) : ''; // 空模块（仅命名）也保留为空串
     const lab = document.getElementById('label-' + id + '-' + k);
