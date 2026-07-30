@@ -1188,3 +1188,23 @@ select.gh-token { appearance:auto; cursor:pointer; }
 :fullscreen .fs-btn { opacity: 0.35; }
 :-webkit-full-screen .fs-btn { opacity: 0.35; }
 .fs-btn:hover { opacity: 1; }
+
+/* ===== 诊断条 / 诊断面板（联想 PWA 卡开屏定位用） ===== */
+.diag-bar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
+  background: #b00020; color: #fff; font-size: 11px; line-height: 1.5;
+  padding: 3px 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+}
+.diag-panel {
+  position: fixed; left: 8px; right: 8px; bottom: 8px; z-index: 9998;
+  max-height: 72vh; overflow: auto; background: #11161d; color: #d7e3f4;
+  border: 1px solid #2a3442; border-radius: 10px; padding: 10px 12px;
+  box-shadow: 0 10px 40px rgba(0,0,0,.6); font-size: 12px;
+}
+.diag-head { display: flex; justify-content: space-between; align-items: center; font-weight: 600; margin-bottom: 6px; }
+.diag-head button { background: none; border: none; color: #9fb3c8; font-size: 18px; cursor: pointer; line-height: 1; }
+.diag-body { white-space: pre-wrap; word-break: break-all; margin: 0 0 8px; font-family: ui-monospace, Menlo, Consolas, monospace; line-height: 1.5; }
+.diag-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.diag-actions .btn { padding: 4px 9px; font-size: 12px; }
+.diag-msg { white-space: pre-wrap; margin-top: 8px; color: #7ee0a0; font-size: 11px; max-height: 130px; overflow: auto; }

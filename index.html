@@ -18,6 +18,113 @@
 </head>
 <body>
 
+<!-- 早期诊断条 + 逻辑：不依赖 app.js，页面一解析就运行；仅在“已安装(standalone)”或发生 JS 错误时显示，便于定位联想 PWA 卡开屏问题 -->
+<div id="diagBar" class="diag-bar" style="display:none;">诊断初始化…</div>
+<script>
+(function(){
+  window.__diag = { errors: [], t0: Date.now() };
+  function pushErr(s){ try{ window.__diag.errors.push(s); }catch(_){} }
+  window.addEventListener('error', function(e){ pushErr('JS错误: '+(e.message||'')+' @'+String(e.filename||'').split('/').pop()+':'+(e.lineno||'')); });
+  window.addEventListener('unhandledrejection', function(e){ pushErr('Promise拒绝: '+((e.reason&&e.reason.message)||e.reason)); });
+
+  window.__paintDiag = function(extra){
+    var bar = document.getElementById('diagBar'); if(!bar) return;
+    var dm = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ? 'standalone' : 'browser';
+    var show = (dm === 'standalone') || (window.__diag && window.__diag.errors.length > 0);
+    bar.style.display = show ? '' : 'none';
+    if(!show) return;
+    var sw = ('serviceWorker' in navigator);
+    var ctrl = !!(navigator.serviceWorker && navigator.serviceWorker.controller);
+    bar.textContent = '诊断 v'+(window.APP_VERSION||'?')+' · 模式:'+dm+' · SW:'+(sw?'支持':'不支持')+' · 控制:'+(ctrl?'是':'否')+(extra?(' · '+extra):'')+' · 错误:'+(window.__diag?window.__diag.errors.length:0)+' · 点 🔧 看详情';
+  };
+  window.addEventListener('DOMContentLoaded', function(){ window.__paintDiag(); });
+  window.addEventListener('load', function(){ window.__paintDiag(); });
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('controllerchange', function(){ if(window.__paintDiag) window.__paintDiag('控制器已变更'); });
+  }
+
+  // ---- 安装到桌面（捕获 beforeinstallprompt，主动触发，不依赖浏览器自动徽章）----
+  var __deferredPrompt = null;
+  window.addEventListener('beforeinstallprompt', function(e){ e.preventDefault(); __deferredPrompt = e; var ib=document.getElementById('installBtn'); if(ib) ib.style.display=''; });
+  window.addEventListener('appinstalled', function(){ var ib=document.getElementById('installBtn'); if(ib) ib.style.display='none'; __logDiag('应用已安装完成'); });
+  window.installApp = function(){
+    if(!__deferredPrompt){ __logDiag('当前无安装提示可用（可能已安装，或浏览器不支持）'); return; }
+    __deferredPrompt.prompt();
+    __deferredPrompt.userChoice.then(function(choice){ __logDiag('安装选择: '+(choice&&choice.outcome)); __deferredPrompt=null; var ib=document.getElementById('installBtn'); if(ib) ib.style.display='none'; }).catch(function(e){ __logDiag('安装出错: '+e.message); });
+  };
+
+  // ---- 诊断面板 ----
+  window.toggleDiag = function(){
+    var p=document.getElementById('diagPanel'); if(!p) return;
+    if(p.hidden){ p.hidden=false; runDiagnostic(); } else p.hidden=true;
+  };
+  function __logDiag(msg){
+    var m=document.getElementById('diagMsg'); if(m) m.textContent=(m.textContent?m.textContent+'\n':'')+msg;
+    runDiagnostic();
+  }
+  window.__logDiag = __logDiag;
+
+  async function runDiagnostic(){
+    var L=[];
+    L.push('时间: '+new Date().toLocaleString());
+    L.push('APP_VERSION: '+(window.APP_VERSION||'(app.js 未执行)'));
+    L.push('UA: '+navigator.userAgent);
+    L.push('display-mode: '+((window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches)?'standalone(已安装)':'browser(浏览器)'));
+    L.push('serviceWorker 支持: '+('serviceWorker' in navigator));
+    L.push('SW 控制器(本页被SW接管): '+!!(navigator.serviceWorker&&navigator.serviceWorker.controller));
+    if('serviceWorker' in navigator){
+      try{
+        var reg=await navigator.serviceWorker.getRegistration();
+        if(reg){ L.push('SW 注册 scope='+reg.scope); L.push('SW 状态: '+(reg.installing?'installing':(reg.waiting?'waiting':(reg.active?'active':'none')))); }
+        else L.push('SW 未注册');
+      }catch(e){ L.push('SW 注册查询失败: '+e.message); }
+    }
+    L.push('--- 缓存(CacheStorage) ---');
+    if('caches' in window){
+      try{
+        var names=await caches.keys();
+        L.push('缓存名('+names.length+'): '+(names.length?names.join(', '):'(空)'));
+        for(var i=0;i<names.length;i++){
+          var reqs=await caches.open(names[i]).then(function(c){return c.keys();});
+          var urls=reqs.map(function(r){var u=r.url.split('/');return u[u.length-1]||r.url;}).join(', ');
+          L.push('  ['+names[i]+'] '+reqs.length+' 项: '+urls);
+        }
+      }catch(e){ L.push('缓存读取失败: '+e.message); }
+    } else L.push('此环境无 CacheStorage');
+    L.push('--- 运行时错误 ---');
+    if(window.__diag&&window.__diag.errors.length) window.__diag.errors.forEach(function(er){ L.push('  '+er); });
+    else L.push('  无');
+    var body=document.getElementById('diagBody'); if(body) body.textContent=L.join('\n');
+    if(window.__paintDiag) window.__paintDiag();
+  }
+  window.runDiagnostic = runDiagnostic;
+
+  window.clearCachesAndReload = async function(){
+    __logDiag('正在清空所有缓存…');
+    try{
+      if('caches' in window){ var names=await caches.keys(); await Promise.all(names.map(function(n){return caches.delete(n);})); __logDiag('已清空 '+names.length+' 个缓存'); }
+      if('serviceWorker' in navigator){ var reg=await navigator.serviceWorker.getRegistration(); if(reg&&reg.waiting) reg.waiting.postMessage('skip'); }
+    }catch(e){ __logDiag('清空失败: '+e.message); }
+    setTimeout(function(){ location.reload(); }, 700);
+  };
+  window.reregisterSW = async function(){
+    __logDiag('重新注册 SW…');
+    try{ if('serviceWorker' in navigator){ await navigator.serviceWorker.register('sw.js'); __logDiag('SW 注册已触发'); } }catch(e){ __logDiag('SW 注册失败: '+e.message); }
+    setTimeout(function(){ location.reload(); }, 700);
+  };
+  window.copyDiag = function(){
+    var body=document.getElementById('diagBody');
+    if(body&&navigator.clipboard) navigator.clipboard.writeText(body.textContent).then(function(){__logDiag('诊断信息已复制');},function(){__logDiag('复制失败，请手动长按选择');});
+    else __logDiag('环境不支持剪贴板');
+  };
+
+  // 已安装(standalone)模式下自动展开诊断，便于定位“只有图标”问题
+  if(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches){
+    setTimeout(function(){ var p=document.getElementById('diagPanel'); if(p){ p.hidden=false; runDiagnostic(); } }, 800);
+  }
+})();
+</script>
+
 <div class="toolbar">
   <div class="toolbar-top">
     <button class="tab-btn active" id="tab-main" onclick="switchTab(&#39;main&#39;)">
@@ -37,6 +144,8 @@
     <button class="btn outline" title="手动新增歌曲" onclick="openAddModal()"><span>＋</span><span>新增歌曲</span></button>
     <button class="btn outline" title="导出修改 / 保存到GitHub" onclick="openExportModal()"><span>📤</span><span>保存到GitHub</span></button>
     <span class="app-version" id="appVersion"></span>
+    <button class="btn outline" id="installBtn" onclick="installApp()" style="display:none;" title="安装到主屏幕/桌面">📲 安装</button>
+    <button class="btn outline" id="diagBtn" onclick="toggleDiag()" title="诊断信息">🔧</button>
   </div>
   <div class="key-bar">
     <span class="key-bar-label">🎼</span>
@@ -290,5 +399,17 @@ if ('serviceWorker' in navigator) {
 </script>
 
 
+
+<div id="diagPanel" class="diag-panel" hidden>
+  <div class="diag-head"><span>🔧 诊断信息</span><button onclick="toggleDiag()" title="关闭">✕</button></div>
+  <pre id="diagBody" class="diag-body"></pre>
+  <div class="diag-actions">
+    <button class="btn outline" onclick="installApp()">📲 安装到桌面</button>
+    <button class="btn outline" onclick="clearCachesAndReload()">🧹 清空缓存并重载</button>
+    <button class="btn outline" onclick="reregisterSW()">🔄 重新注册 SW</button>
+    <button class="btn outline" onclick="copyDiag()">📋 复制</button>
+  </div>
+  <div id="diagMsg" class="diag-msg"></div>
+</div>
 
 </body></html>
