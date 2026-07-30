@@ -117,6 +117,14 @@
     border-color: var(--accent);
     color: var(--text);
   }
+  /* 图标按钮（标题栏：上一首/下一首/编辑/显示隐藏级数）：去掉文字、做成紧凑方形 */
+  .btn.icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 5px 8px;
+  }
+  .ic { width: 18px; height: 18px; display: block; flex: none; }
   /* 工具栏右侧两个操作按钮（节拍器 / 导出·保存到GitHub）撑满当前行右侧 */
   .toolbar-top > .btn.outline {
     flex: 1 1 0;
@@ -278,7 +286,7 @@
   .measure-beats {
     display: flex;            /* 和弦拍格横向排列（保持原样） */
     align-items: stretch;
-    border-right: 1px dashed rgba(88,166,255,0.15);  /* 上下两区同用虚线，视觉连续 */
+    border-right: 1px solid rgba(88,166,255,0.22);  /* 小节线（实线）：上下两区同色，视觉连续 */
   }
   .beat {
     flex: 1 1 auto;
@@ -653,8 +661,8 @@
     padding: 3px 6px 0;   /* 底部留白归零：歌词栏下方紧贴边界 */
     background: transparent;
     border: none;
-    border-left: 1px dashed rgba(88,166,255,0.15);  /* 与和弦小节分割线同色虚线 */
-    border-right: 1px dashed rgba(88,166,255,0.15);
+    border-left: 1px solid rgba(88,166,255,0.22);  /* 与和弦小节分割线同色实线（小节线） */
+    border-right: 1px solid rgba(88,166,255,0.22);
     border-radius: 0;
     color: rgba(240,246,252,0.88);
     font-size: 14px;
@@ -840,6 +848,7 @@ select.gh-token { appearance:auto; cursor:pointer; }
   .dm-chip b { font-size: 12px; font-weight: 700; }
   .detail-actions { gap: 3px; flex-shrink: 0; }
   .detail-actions .btn { padding: 3px 6px; font-size: 12px; border-radius: 5px; }
+  .detail-actions .btn.icon-btn .ic { width: 16px; height: 16px; }
   .detail-close { font-size: 10px; padding: 3px 6px; }
   .detail-body { padding: 8px 10px 60px; }
   .detail-body .prog-label { font-size: 20px; }

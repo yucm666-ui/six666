@@ -177,11 +177,11 @@
   <div class="detail-bar">
     <div class="detail-title" id="detailTitle"><span class="detail-name">真的爱你</span><span class="detail-meta"><span class="dm-chip"><i>原调</i><b>C</b></span><span class="dm-chip"><i>男调</i><b>C</b></span><span class="dm-chip"><i>女调</i><b>F</b></span><span class="dm-chip"><i>速度</i><b>82</b></span><span class="dm-chip"><i>拍号</i><b>4/4</b></span></span></div>
     <div class="detail-actions">
-      <button class="btn outline" id="prevSong" title="上一首" onclick="navigateSong(-1)">◀ 上一首</button>
-      <button class="btn outline" id="nextSong" title="下一首" onclick="navigateSong(1)">下一首 ▶</button>
-      <button class="btn outline" id="editToggle" title="编辑：修改字母和弦、模块名称，或新增模块，保存后自动推导级数">✏️ 编辑</button>
-      <button class="btn outline" id="ignoreToggle" title="复杂/升降调歌曲：隐藏级数、只看和弦字母；再点恢复级数显示" onclick="toggleIgnoreDegrees(currentDetailId)">🔢 显示级数</button>
-      <button class="btn outline" id="editCancel" title="取消编辑" onclick="toggleEditMode()" style="display: none;">✕ 取消</button>
+      <button class="btn outline icon-btn" id="prevSong" title="上一首" aria-label="上一首" onclick="navigateSong(-1)"><svg viewBox="0 0 24 24" class="ic" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button class="btn outline icon-btn" id="nextSong" title="下一首" aria-label="下一首" onclick="navigateSong(1)"><svg viewBox="0 0 24 24" class="ic" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button class="btn outline icon-btn" id="editToggle" title="编辑：修改字母和弦、模块名称，或新增模块，保存后自动推导级数" aria-label="编辑" onclick="toggleEditMode()"><svg viewBox="0 0 24 24" class="ic" aria-hidden="true"><path d="M4 20h4L18.5 9.5a2.12 2.12 0 0 0-3-3L5 17v3z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M13.5 7.5l3 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+      <button class="btn outline icon-btn" id="ignoreToggle" title="复杂/升降调歌曲：隐藏级数、只看和弦字母；再点恢复级数显示" aria-label="显示/隐藏级数" onclick="toggleIgnoreDegrees(currentDetailId)"><svg viewBox="0 0 24 24" class="ic" aria-hidden="true"><path d="M9 4L7 20M17 4l-2 16M4.5 9h15M3.5 15h15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+      <button class="btn outline icon-btn" id="editCancel" title="取消编辑" aria-label="取消编辑" onclick="toggleEditMode()" style="display: none;"><svg viewBox="0 0 24 24" class="ic" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
       <button class="detail-close" onclick="closeDetail()">✕ 关闭</button>
     </div>
   </div>

@@ -2,7 +2,7 @@
 // ======================== 应用版本号（单一数据源） ========================
 // 界面右上角与浏览器标签会显示此版本，方便平板上核对是否吃到了最新缓存。
 // 升级功能时改这一处即可，无需改别处。
-const APP_VERSION = '1.0.6';
+const APP_VERSION = '1.0.7';
 function applyVersion() {
   document.title = '工作歌单 v' + APP_VERSION;
   const el = document.getElementById('appVersion');
@@ -1325,29 +1325,50 @@ function toggleIgnoreDegrees(id) {
   renderRefPanel();
   updateIgnoreBtn();
 }
+// 标题栏图标（currentColor 自适应深/浅色主题）
+const ICON = {
+  prev:  '<svg viewBox="0 0 24 24" class="ic" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  next:  '<svg viewBox="0 0 24 24" class="ic" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  edit:  '<svg viewBox="0 0 24 24" class="ic" aria-hidden="true"><path d="M4 20h4L18.5 9.5a2.12 2.12 0 0 0-3-3L5 17v3z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M13.5 7.5l3 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+  save:  '<svg viewBox="0 0 24 24" class="ic" aria-hidden="true"><path d="M5 3h11l4 4v14H5z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M8 3v5h7V3" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M8 13h8v8H8z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>',
+  num:   '<svg viewBox="0 0 24 24" class="ic" aria-hidden="true"><path d="M9 4L7 20M17 4l-2 16M4.5 9h15M3.5 15h15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+  note:  '<svg viewBox="0 0 24 24" class="ic" aria-hidden="true"><path d="M9 18V6l10-2v12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="6.5" cy="18" r="2.6" fill="currentColor"/><circle cx="16.5" cy="16" r="2.6" fill="currentColor"/></svg>',
+  close: '<svg viewBox="0 0 24 24" class="ic" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>'
+};
 function updateIgnoreBtn() {
   const b = document.getElementById('ignoreToggle');
   if (!b) return;
   const song = songs.find(s => s.id === currentDetailId);
   const on = !!(song && song.ignoreDegrees);
-  b.textContent = on ? '🔕 已隐藏级数' : '🔢 显示级数';
-  b.className = 'btn outline' + (on ? ' active' : '');
+  // on=true → 级数已隐藏，点击"显示级数"；图标用 #（数字级数）表示
+  // on=false → 级数显示中，点击"隐藏级数"；图标用音符表示（只看和弦字母）
+  b.innerHTML = on ? ICON.num : ICON.note;
+  b.title = on ? '显示级数：恢复数字级数显示' : '隐藏级数：只看和弦字母（适合复杂/升降调歌曲）';
+  b.setAttribute('aria-label', on ? '显示级数' : '隐藏级数');
+  b.className = 'btn outline icon-btn' + (on ? ' active' : '');
 }
 function updateEditBtn() {
   const b = document.getElementById('editToggle');
   const c = document.getElementById('editCancel');
   if (b) {
     if (editMode) {
-      b.className = 'btn primary';
-      b.textContent = '💾 暂存';
+      b.className = 'btn primary icon-btn';
+      b.innerHTML = ICON.save;
+      b.title = '暂存：写入内存（再点"保存到 GitHub"落盘）';
+      b.setAttribute('aria-label', '暂存');
       b.onclick = () => saveChordEdit(currentDetailId);
     } else {
-      b.className = 'btn outline';
-      b.textContent = '✏️ 编辑';
+      b.className = 'btn outline icon-btn';
+      b.innerHTML = ICON.edit;
+      b.title = '编辑：修改字母和弦、模块名称，或新增模块，保存后自动推导级数';
+      b.setAttribute('aria-label', '编辑');
       b.onclick = () => toggleEditMode();
     }
   }
-  if (c) c.style.display = editMode ? '' : 'none';
+  if (c) {
+    c.style.display = editMode ? '' : 'none';
+    c.innerHTML = ICON.close;
+  }
 }
 // ======================== 模块拖拽排序 ========================
 let dragSrcKey = null;
