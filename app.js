@@ -2,7 +2,7 @@
 // ======================== 应用版本号（单一数据源） ========================
 // 界面右上角与浏览器标签会显示此版本，方便平板上核对是否吃到了最新缓存。
 // 升级功能时改这一处即可，无需改别处。
-const APP_VERSION = '1.0.16';
+const APP_VERSION = '1.0.17';
 window.APP_VERSION = APP_VERSION;
 function applyVersion() {
   document.title = '工作歌单 v' + APP_VERSION;
@@ -672,8 +672,10 @@ function rowWrap(measureHtmlArr) {
   return out;
 }
 
-// 每行固定 4 个小节：行内等分；若某小节和弦内容超出等分宽（字会被盖住），
-// 则该小节放大、同行其余小节按比例缩小，整行仍保持 4 个小节不变（总宽填满整行）。
+// 每行固定 4 个小节：
+//  - 满行（恰好 4 小节）：某小节和弦内容超出等分宽则放大该小节、同行其余按比例缩小，整行仍 4 小节填满整行。
+//  - 不满 4 小节的末行：某小节和弦挤不下（字被盖住）则「直接延长该小节宽度直到内容全部露出」，同行其余小节保持
+//    默认宽（每行4小节的均分宽）；仅当所有小节需求宽之和超过整行宽（极端情况）才退回按比例分配以杜绝裁切。
 function fitMeasureWidths(root) {
   if (!root || !root.querySelectorAll) return;
   root.querySelectorAll('.prog-measures').forEach(pm => {
@@ -691,15 +693,15 @@ function fitMeasureWidths(root) {
         m.querySelectorAll('.beat').forEach(b => { b.style.flex = ''; });
       });
       const COUNT = measures.length;
-      const equal = rowW / COUNT;
+      const equal = rowW / 4;                       // 「每行4小节」的默认小节宽（不满4时其余小节按此宽）
       const tol = 1;
-      // 每小节内容真实所需宽（拍格横向排开的自然宽，不受当前压缩影响）
+      // 每小节内容真实所需宽（拍格横向排开的自然宽，nowrap 下即使被 overflow:hidden 裁也能量到）
       const need = measures.map(m => {
         const beats = m.querySelectorAll('.beat');
         let sum = 0;
         beats.forEach(b => {
           const c = b.querySelector('.measure-chord');
-          const cw = c ? c.scrollWidth : 0;        // nowrap 下反映真实内容宽（即使被 overflow:hidden 裁也能量到）
+          const cw = c ? c.scrollWidth : 0;
           const bcs = getComputedStyle(b);
           sum += cw + parseFloat(bcs.paddingLeft) + parseFloat(bcs.paddingRight);
         });
@@ -707,18 +709,40 @@ function fitMeasureWidths(root) {
         const padX = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
         return sum + padX + 2;
       });
-      const anyOverflow = need.some(nd => nd > equal + tol);
-      if (!anyOverflow) {
-        // 全部能放下：行内等分，视觉整齐
-        measures.forEach(m => { m.style.flex = '1 1 0'; m.style.flexGrow = '1'; });
+
+      if (COUNT === 4) {
+        // 满行：溢出则按内容宽分配 grow（basis:0 时宽 ∝ grow，行宽恒定 → 始终 4 小节填满整行）
+        const anyOverflow = need.some(nd => nd > equal + tol);
+        if (!anyOverflow) {
+          measures.forEach(m => { m.style.flex = '1 1 0'; m.style.flexGrow = '1'; });
+          return;
+        }
+        measures.forEach((m, i) => {
+          m.style.flex = '1 1 0';
+          m.style.flexGrow = String(need[i] > 0 ? need[i] : equal);
+        });
         return;
       }
-      // 有溢出：按内容宽分配 grow（basis:0 时宽 ∝ grow，且行宽恒定 → 始终 4 小节填满整行）
-      // 溢出小节变宽、其余按相同比例变窄，整行仍保持 COUNT 个小节不变
-      measures.forEach((m, i) => {
-        m.style.flex = '1 1 0';
-        m.style.flexGrow = String(need[i] > 0 ? need[i] : equal);
-      });
+
+      // 不满 4 小节的末行：溢出小节「延长到内容全部露出」，其余保持默认宽（行右侧留白，不强行铺满）
+      const extend = need.map(nd => nd > equal + tol);
+      if (!extend.some(Boolean)) {
+        measures.forEach(m => { m.style.flex = '0 0 ' + equal + 'px'; });
+        return;
+      }
+      const totalNeeded = need.reduce((a, nd, i) => a + (extend[i] ? nd : equal), 0);
+      if (totalNeeded <= rowW) {
+        // 行内放得下：溢出小节定宽到内容全露出，其余定宽到默认宽
+        measures.forEach((m, i) => {
+          m.style.flex = '0 0 ' + Math.ceil(extend[i] ? need[i] : equal) + 'px';
+        });
+      } else {
+        // 极端：需求宽之和超出行宽 → 退回按比例分配，保证不裁切（此时末行小节也会按比例变窄）
+        measures.forEach((m, i) => {
+          m.style.flex = '1 1 0';
+          m.style.flexGrow = String(need[i] > 0 ? need[i] : equal);
+        });
+      }
     });
   });
 }
