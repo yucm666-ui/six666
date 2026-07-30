@@ -1190,12 +1190,6 @@ select.gh-token { appearance:auto; cursor:pointer; }
 .fs-btn:hover { opacity: 1; }
 
 /* ===== 诊断条 / 诊断面板（联想 PWA 卡开屏定位用） ===== */
-.diag-bar {
-  position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
-  background: #b00020; color: #fff; font-size: 11px; line-height: 1.5;
-  padding: 3px 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  font-family: ui-monospace, Menlo, Consolas, monospace;
-}
 .diag-panel {
   position: fixed; left: 8px; right: 8px; bottom: 8px; z-index: 9998;
   max-height: 72vh; overflow: auto; background: #11161d; color: #d7e3f4;

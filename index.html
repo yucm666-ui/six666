@@ -18,8 +18,6 @@
 </head>
 <body>
 
-<!-- 早期诊断条 + 逻辑：不依赖 app.js，页面一解析就运行；仅在“已安装(standalone)”或发生 JS 错误时显示，便于定位联想 PWA 卡开屏问题 -->
-<div id="diagBar" class="diag-bar" style="display:none;">诊断初始化…</div>
 <script>
 (function(){
   window.__diag = { errors: [], t0: Date.now() };
@@ -27,21 +25,6 @@
   window.addEventListener('error', function(e){ pushErr('JS错误: '+(e.message||'')+' @'+String(e.filename||'').split('/').pop()+':'+(e.lineno||'')); });
   window.addEventListener('unhandledrejection', function(e){ pushErr('Promise拒绝: '+((e.reason&&e.reason.message)||e.reason)); });
 
-  window.__paintDiag = function(extra){
-    var bar = document.getElementById('diagBar'); if(!bar) return;
-    var dm = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ? 'standalone' : 'browser';
-    var show = (dm === 'standalone') || (window.__diag && window.__diag.errors.length > 0);
-    bar.style.display = show ? '' : 'none';
-    if(!show) return;
-    var sw = ('serviceWorker' in navigator);
-    var ctrl = !!(navigator.serviceWorker && navigator.serviceWorker.controller);
-    bar.textContent = '诊断 v'+(window.APP_VERSION||'?')+' · 模式:'+dm+' · SW:'+(sw?'支持':'不支持')+' · 控制:'+(ctrl?'是':'否')+(extra?(' · '+extra):'')+' · 错误:'+(window.__diag?window.__diag.errors.length:0)+' · 点 🔧 看详情';
-  };
-  window.addEventListener('DOMContentLoaded', function(){ window.__paintDiag(); });
-  window.addEventListener('load', function(){ window.__paintDiag(); });
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.addEventListener('controllerchange', function(){ if(window.__paintDiag) window.__paintDiag('控制器已变更'); });
-  }
 
   // ---- 安装到桌面（捕获 beforeinstallprompt，主动触发，不依赖浏览器自动徽章）----
   var __deferredPrompt = null;
@@ -95,7 +78,6 @@
     if(window.__diag&&window.__diag.errors.length) window.__diag.errors.forEach(function(er){ L.push('  '+er); });
     else L.push('  无');
     var body=document.getElementById('diagBody'); if(body) body.textContent=L.join('\n');
-    if(window.__paintDiag) window.__paintDiag();
   }
   window.runDiagnostic = runDiagnostic;
 
@@ -118,10 +100,6 @@
     else __logDiag('环境不支持剪贴板');
   };
 
-  // 已安装(standalone)模式下自动展开诊断，便于定位“只有图标”问题
-  if(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches){
-    setTimeout(function(){ var p=document.getElementById('diagPanel'); if(p){ p.hidden=false; runDiagnostic(); } }, 800);
-  }
 })();
 </script>
 
