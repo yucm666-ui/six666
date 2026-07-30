@@ -29,14 +29,13 @@ self.addEventListener('install', e => {
       }
       if (!ok) criticalOk = false;
     }
-    if (!criticalOk) console.warn('[SW] 关键资源预缓存仍失败（设备可能离线），本次更新暂不激活，保留旧版可用');
+    if (!criticalOk) console.warn('[SW] 关键资源预缓存仍失败（设备可能离线）；联网打开时将由 network-first 自动拉取最新页面');
     // 非关键资源（图标/manifest/数据）容忍个别失败
     await Promise.allSettled(
       APP_SHELL.filter(u => !CRITICAL.includes(u)).concat([DATA_URL]).map(u => cache.add(u))
     );
-    // 仅当关键资源全部就绪才激活新 SW；否则保留旧版（避免“删旧缓存+新缓存残缺”导致白屏）
-    // 注意：若本次因离线未激活，下次在线打开时浏览器会重新安装并正常激活
-    if (criticalOk) await self.skipWaiting();
+    // 始终激活新 SW：靠 fetch 的 network-first 自愈（联网即渲染最新），避免“离线安装→新SW卡在 waiting→旧版(坏的)永远控场”的死锁
+    await self.skipWaiting();
   })());
 });
 
