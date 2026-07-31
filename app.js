@@ -2,7 +2,7 @@
 // ======================== 应用版本号（单一数据源） ========================
 // 界面右上角与浏览器标签会显示此版本，方便平板上核对是否吃到了最新缓存。
 // 升级功能时改这一处即可，无需改别处。
-const APP_VERSION = '1.0.18';
+const APP_VERSION = '1.0.19';
 window.APP_VERSION = APP_VERSION;
 function applyVersion() {
   document.title = '工作歌单 v' + APP_VERSION;
@@ -152,19 +152,37 @@ function splitChordTokens(str) {
   return out;
 }
 
-// 把级数串里的字母低音（如 5/E 的 E）换算成相对原调的级数低音（如 5/7），使级数行与和弦行结构一致
+// 半音数 → 相对级数（带升降号）。semis 为相对根音的半音数（0..11）。
+// 非自然音阶的转位低音按西方音乐常规记谱返回带升降号的级数：
+// 小二度 b2、小三度 b3、增四度 #4、增五度 #5、小七度 b7（与调性无关的标准音级写法）。
+function semisToDegree(semis) {
+  const CHROMATIC_DEG = { 1: 'b2', 3: 'b3', 6: '#4', 8: '#5', 10: 'b7' };
+  if (CHROMATIC_DEG[semis] !== undefined) return CHROMATIC_DEG[semis];
+  // 其余半音数均为自然音级（已由上级自然音阶循环处理），兜底按自然级数返回
+  const nat = {0:1,2:2,4:3,5:4,7:5,9:6,11:7};
+  return String(nat[semis] != null ? nat[semis] : '');
+}
+// 把级数串里的字母低音（如 5/E 的 E，或 5/B 的 B）换算成相对原调的级数低音（如 5/7、5/b6），
+// 使级数行与和弦行结构一致。自然音阶内直接用顺阶级数；非自然音阶（如 Eb 调里的 B）按半音关系
+// 算出带升降号的相对级数，确保级数行的转位永远以数字显示，绝不残留字母低音。
 function letterBassToDegree(letter, origKey) {
   const target = NOTE_NORM[letter];
   if (target === undefined) return letter;
-  // 小调原调级数按关系大调标注，用关系大调的顺阶和弦表换算
-  const chords = keyChords[origKey] || keyChords[minorToMajor[origKey]];
+  // 小调原调级数按关系大调标注，用关系大调的顺阶和弦表与半音基准
+  const effKey = (origKey != null && minorToMajor[origKey] != null) ? minorToMajor[origKey] : origKey;
+  const chords = keyChords[origKey] || keyChords[effKey];
   if (!chords) return letter;
+  // 1) 自然音级（无升降号）
   for (let d = 1; d <= 7; d++) {
     const m = chords[d - 1].match(/^([A-G][#b]*)/); // 直接取根音，规避 dim/m 后缀干扰
     const r = m ? m[1] : '';
     if ((NOTE_NORM[r] % 12) === (target % 12)) return String(d);
   }
-  return letter; // 不在自然音阶内的变化低音，保持原字母
+  // 2) 非自然音级：按半音关系算出相对级数（带升降号），级数行恒显示数字而非字母
+  const rootSemi = NOTE_NORM[effKey];
+  if (rootSemi === undefined) return letter;
+  const semis = ((target - rootSemi) % 12 + 12) % 12;
+  return semisToDegree(semis);
 }
 function bassLetterToDegreeStr(numToken, origKey) {
   if (!numToken) return numToken;
@@ -203,7 +221,7 @@ function measureCellsHtml(numStr, chordStr, beats, origKey, ignoreDeg) {
     const c = j >= 0 ? chords[j] : '';                // 该拍无和弦 → 休止
     const nRaw = (c && j >= 0 && j < numDegs.length) ? numDegs[j] : '';  // 休止拍不显示级数
     // 级数后缀（sus/maj/min/dim/aug/add 等）用小字；转位 /X 不缩小
-    const nHtml = nRaw ? nRaw.replace(/^([b#]?\d)((?:sus\d*|maj\d*|min|dim|aug|add\d*|[mM]\d*|\+|\°|\d+)?)(\/\d+)?$/,
+    const nHtml = nRaw ? nRaw.replace(/^([b#]?\d)((?:sus\d*|maj\d*|min|dim|aug|add\d*|[mM]\d*|\+|\°|\d+)?)(\/(?:[b#]?\d+))?$/,
       (_, root, suffix, slash) => root + (suffix ? '<small>' + suffix + '</small>' : '') + (slash || '')) : '';
     // 和弦字母行同步：转位 /X 不缩小；后缀与度数正则一致（含 [mM]\d*，避免大七 M7 被截断成 M）
     // 大七显示为标准写法：M7→maj7（如 GbM7→Gbmaj7、CM7→Cmaj7），小七 m7 / 属七 7 / maj7 不受影响
@@ -351,6 +369,9 @@ function letterToDegree(token, key) {
   let bass = '', quality = rest;
   const bi = rest.indexOf('/');
   if (bi >= 0) { bass = rest.slice(bi); quality = rest.slice(0, bi); }
+  // 把字母低音转成相对级数（数字，可能带升降号），保证保存的度数永远用数字表示转位，不再残留字母
+  let bassDeg = '';
+  if (bass) bassDeg = '/' + letterBassToDegree(bass.slice(1), key);
   // 新标准写法优先（maj/°/+），旧式 M/dom 仅作兜底兼容，确保编辑模式产出标准度数
   const qCands = ['', quality, 'maj', '°7', 'm7b5'];
   // 1) 先试自然音级：直接用 keyChords 根音（兼容 Db/Eb/Ab 等降号调的正确拼法）
@@ -358,10 +379,10 @@ function letterToDegree(token, key) {
     const rRoot = chords[d - 1].replace(/dim$/, '').replace(/min$/, '').replace(/aug$/, '').replace(/m$/, ''); // 取该级顺阶根音（先剥 dim/min/aug 再剥 m）
     if ((NOTE_NORM[rRoot] % 12) !== rootPC) continue;
     // 第7级(导音)的小七/半减七/减小七 → 大调自然音阶里就是半减七 vii°7，标准记法统一为 7°7（避免 domm7 类畸形记号）
-    if (d === 7 && /m7|b5|°/.test(quality)) return '7°7' + bass;
+    if (d === 7 && /m7|b5|°/.test(quality)) return '7°7' + bassDeg;
     for (const q of qCands) {
-      const test = d + q + bass;
-      if (numToChord(test, key) === token) return String(d) + (q || '') + bass;
+      const test = d + q + bassDeg;
+      if (numToChord(test, key) === token) return String(d) + (q || '') + bassDeg;
     }
   }
   // 2) 再试变化音级（b/#）：依赖半音表（降号调的转位/变化音为已知边界，仅升号调可用）
@@ -371,10 +392,10 @@ function letterToDegree(token, key) {
         const sem = degreeSemitones[d] + (acc === 'b' ? -1 : 1);
         const r = chromaticNotes[(keyIdx + sem + 120) % 12];
         if ((NOTE_NORM[r] % 12) !== rootPC) continue;
-        if (d === 7 && /m7|b5|°/.test(quality)) return acc + '7°7' + bass;
+        if (d === 7 && /m7|b5|°/.test(quality)) return acc + '7°7' + bassDeg;
         for (const q of qCands) {
-          const test = acc + d + q + bass;
-          if (numToChord(test, key) === token) return acc + d + (q || '') + bass;
+          const test = acc + d + q + bassDeg;
+          if (numToChord(test, key) === token) return acc + d + (q || '') + bassDeg;
         }
       }
     }
