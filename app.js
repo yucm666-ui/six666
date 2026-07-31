@@ -2,7 +2,7 @@
 // ======================== 应用版本号（单一数据源） ========================
 // 界面右上角与浏览器标签会显示此版本，方便平板上核对是否吃到了最新缓存。
 // 升级功能时改这一处即可，无需改别处。
-const APP_VERSION = '1.0.17';
+const APP_VERSION = '1.0.18';
 window.APP_VERSION = APP_VERSION;
 function applyVersion() {
   document.title = '工作歌单 v' + APP_VERSION;
@@ -38,6 +38,9 @@ let currentOrigKey = null; // 当前展开歌曲的原调（用于标注"(原调
 
 // 小调歌曲→关系大调映射（级数本就按关系大调标注，如Am调歌曲的"6"=Am=C大调的vi）
 const minorToMajor = {'Am':'C','Bm':'D','Em':'G','F#m':'A','C#m':'E','G#m':'B','Dm':'F','Cm':'Eb','Fm':'Ab','Bbm':'Db','Abm':'Gb','Ebm':'B'};
+// 歌曲可用调集合：12 大调 + 12 小调 = 24 个。新增与编辑两处下拉必须共用此列表，
+// 否则小调歌在编辑下拉里无对应选项，保存时会把原调清空/错乱 → 和弦推导崩坏。
+const ALL_SONG_KEYS = Object.keys(keyChords).concat(Object.keys(minorToMajor));
 // 取某首歌用于和弦转换的有效调（始终用transposeKey，因为不再有"原调"模式）
 function effectiveChordKey(songKey) {
   return transposeKey;
@@ -929,12 +932,10 @@ function downloadExport() {
 // 数据流：songs.push → 导出 diff（songDiff 含 !orig 新歌）→ saveToGitHub 的 mergeSongs added 分支随 songs 一起保存
 function openAddModal() {
   // 填充调性下拉：12 大调 + 12 小调（与曲库实际用法一致，小调按关系大调标注级数）
-  const majors = Object.keys(keyChords);
-  const minors = Object.keys(minorToMajor);
   const fill = (id, sel) => {
     const el = document.getElementById(id);
     if (!el) return;
-    el.innerHTML = '<option value="">—</option>' + majors.concat(minors)
+    el.innerHTML = '<option value="">—</option>' + ALL_SONG_KEYS
       .map(k => '<option value="' + k + '"' + (k === sel ? ' selected' : '') + '>' + k + '</option>').join('');
   };
   fill('add-key', 'C'); fill('add-mk', ''); fill('add-fk', '');
@@ -1280,7 +1281,7 @@ function renderDetail() {
   const titleEl = document.getElementById('detailTitle');
   if (editMode && !song.pinned) {
     // 编辑模式：元信息可输入
-    const keyOpts = (sel) => '<option value="">—</option>' + Object.keys(keyChords).map(k => '<option value="' + k + '"' + (k === sel ? ' selected' : '') + '>' + k + '</option>').join('');
+    const keyOpts = (sel) => '<option value="">—</option>' + ALL_SONG_KEYS.map(k => '<option value="' + k + '"' + (k === sel ? ' selected' : '') + '>' + k + '</option>').join('');
     let meta = '<span class="dm-edit"><label>原调</label><select id="meta-key-' + id + '">' + keyOpts(song.key) + '</select></span>';
     meta += '<span class="dm-edit"><label>男调</label><select id="meta-mk-' + id + '">' + keyOpts(song.maleKey) + '</select></span>';
     meta += '<span class="dm-edit"><label>女调</label><select id="meta-fk-' + id + '">' + keyOpts(song.femaleKey) + '</select></span>';
