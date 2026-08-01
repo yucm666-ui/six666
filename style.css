@@ -418,7 +418,7 @@
     transition: max-height 0.25s ease;
   }
   .ref-panel.open .ref-panel-body {
-    max-height: 60vh;
+    max-height: calc(100vh - 150px);
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     padding: 10px 16px;
@@ -1232,3 +1232,21 @@ select.gh-token { appearance:auto; cursor:pointer; }
 .diag-actions { display: flex; flex-wrap: wrap; gap: 6px; }
 .diag-actions .btn { padding: 4px 9px; font-size: 12px; }
 .diag-msg { white-space: pre-wrap; margin-top: 8px; color: #7ee0a0; font-size: 11px; max-height: 130px; overflow: auto; }
+
+/* ===== 开机加载浮层（替代 OS 启动图标，显示真实加载进度） ===== */
+.boot {
+  position: fixed; inset: 0; z-index: 10000;
+  display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(circle at 50% 35%, #11161d 0%, #0d1117 70%);
+  transition: opacity .4s ease;
+}
+.boot.hide { opacity: 0; pointer-events: none; }
+.boot-card { width: min(82%, 320px); text-align: center; }
+.boot-logo { font-size: 58px; line-height: 1; filter: drop-shadow(0 4px 16px rgba(88,166,255,.35)); animation: boot-bob 1.8s ease-in-out infinite; }
+@keyframes boot-bob { 0%,100%{ transform: translateY(0); } 50%{ transform: translateY(-6px); } }
+.boot-title { font-size: 20px; font-weight: 800; margin: 12px 0 20px; color: var(--text); letter-spacing: .5px; }
+.boot-bar { height: 8px; border-radius: 5px; background: rgba(255,255,255,.10); overflow: hidden; }
+.boot-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent-dim), var(--accent)); border-radius: 5px; transition: width .25s ease; }
+.boot.indeterminate .boot-fill { width: 100% !important; transform-origin: left center; animation: boot-indet 1.15s ease-in-out infinite; }
+@keyframes boot-indet { 0%{ transform: scaleX(.06); } 45%{ transform: scaleX(.55); } 100%{ transform: scaleX(.06); } }
+.boot-status { margin-top: 12px; font-size: 13px; color: var(--text-dim); min-height: 18px; }

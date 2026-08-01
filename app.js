@@ -2,7 +2,7 @@
 // ======================== 应用版本号（单一数据源） ========================
 // 界面右上角与浏览器标签会显示此版本，方便平板上核对是否吃到了最新缓存。
 // 升级功能时改这一处即可，无需改别处。
-const APP_VERSION = '1.0.20';
+const APP_VERSION = '1.0.21';
 window.APP_VERSION = APP_VERSION;
 function applyVersion() {
   document.title = '工作歌单 v' + APP_VERSION;
@@ -2250,10 +2250,58 @@ function loadDataAndInit(data) {
     resetInitSnap(); // 首次加载完成后拍初始快照，供导出 diff 使用
   }
 }
-fetch('songs.json?t=' + Date.now(), { cache: 'no-store' })
-  .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+// ======================== 开机加载浮层（进度条 + 当前步骤） ========================
+// 浮层在 index.html 静态层，随首屏立即显示，替代 OS 启动图标“卡住”的观感；
+// app.js 已加 defer，保证浮层先于脚本执行画出。
+function bootSet(pct, text, indeterminate) {
+  const boot = document.getElementById('boot');
+  if (!boot) return;
+  const fill = document.getElementById('bootFill');
+  const st = document.getElementById('bootStatus');
+  if (indeterminate) boot.classList.add('indeterminate');
+  else { boot.classList.remove('indeterminate'); if (fill) fill.style.width = Math.max(0, Math.min(100, pct)) + '%'; }
+  if (st && text != null) st.textContent = text;
+}
+function bootHide() {
+  const boot = document.getElementById('boot');
+  if (!boot) return;
+  boot.classList.add('hide');
+  setTimeout(function () { if (boot && boot.parentNode) boot.parentNode.removeChild(boot); }, 450);
+}
+// 流式读取 songs.json，按 content-length 报告真实下载百分比；不支持流式则退回普通 json
+async function fetchSongsWithProgress(url) {
+  const res = await fetch(url, { cache: 'no-store' });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const total = +res.headers.get('content-length') || 0;
+  if (!res.body || !res.body.getReader) return res.json();
+  const reader = res.body.getReader();
+  const chunks = [];
+  let received = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value);
+    received += value.length;
+    if (total) {
+      const ratio = received / total;
+      bootSet(Math.min(80, Math.round(ratio * 80)), '正在下载曲库数据 ' + Math.round(ratio * 100) + '%');
+    } else {
+      bootSet(0, '正在下载曲库数据…', true);
+    }
+  }
+  const buf = new Uint8Array(received);
+  let pos = 0;
+  for (const c of chunks) { buf.set(c, pos); pos += c.length; }
+  return JSON.parse(new TextDecoder('utf-8').decode(buf));
+}
+
+bootSet(0, '正在加载曲库…', true);
+fetchSongsWithProgress('songs.json?t=' + Date.now())
   .then(data => {
+    bootSet(82, '正在渲染歌单…');
     loadDataAndInit(data);
+    bootSet(100, '完成');
+    bootHide();
     // 如果本地存有 token，用 GitHub API 读最新内容覆盖（绕过 CDN 缓存延迟）
     const tok = localStorage.getItem('gh_token');
     if (tok) {
@@ -2268,7 +2316,10 @@ fetch('songs.json?t=' + Date.now(), { cache: 'no-store' })
         .catch(() => {}); // 静默失败，沿用 CDN 数据
     }
   })
-  .catch(err => console.error('加载 songs.json 失败：', err));
+  .catch(err => {
+    bootSet(0, '加载失败：' + (err && err.message ? err.message : err) + '（请检查网络后刷新）', true);
+    console.error('加载 songs.json 失败：', err);
+  });
 
 
 /* ===== 全屏切换（安卓 Chrome：隐藏系统状态/导航栏，沉浸视奏） ===== */

@@ -18,6 +18,16 @@
 </head>
 <body>
 
+<!-- 开机加载浮层：立即覆盖屏幕，显示真实加载进度，替代 OS 启动图标“卡住”的观感 -->
+<div id="boot" class="boot">
+  <div class="boot-card">
+    <div class="boot-logo">🎸</div>
+    <div class="boot-title">工作歌单</div>
+    <div class="boot-bar"><div class="boot-fill" id="bootFill"></div></div>
+    <div class="boot-status" id="bootStatus">正在启动…</div>
+  </div>
+</div>
+
 <script>
 (function(){
   window.__diag = { errors: [], t0: Date.now() };
@@ -395,7 +405,7 @@
   </svg>
 </button>
 
-<script src="app.js"></script>
+<script src="app.js" defer></script>
 <script>
 // 注册 Service Worker（相对路径，兼容 GitHub Pages 子路径 /repo/ 部署），注册失败不影响使用
 if ('serviceWorker' in navigator) {
