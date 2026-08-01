@@ -2,7 +2,7 @@
 // 部署：GitHub Pages 子路径（/repo/）兼容——全部使用相对路径，注册时用 'sw.js'。
 // 重要：每次修改 app.js / index.html / style.css / songs.json 后，请把 VERSION 升一级，
 //       旧缓存会在激活时自动清理，用户下次打开即为最新版。
-const VERSION = 'songbook-v28';
+const VERSION = 'songbook-v29';
 const APP_SHELL = [
   './',
   'index.html',
@@ -83,14 +83,23 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // 其它外壳资源(css/js/图标)：cache-first + 回源写入（离线秒开，在线自动更新）
-  e.respondWith(
-    caches.match(req, { ignoreSearch: true }).then(hit => hit || fetch(req).then(res => {
-      if (res.ok && res.type === 'basic') {
-        const copy = res.clone();
-        caches.open(VERSION).then(c => c.put(req, copy));
-      }
-      return res;
-    }).catch(() => hit || caches.match(req)))
-  );
+  // 代码资源(app.js/style.css)：network-first，保证升版后永远先取最新，杜绝旧缓存锁死版本号
+  if (path.endsWith('/app.js') || path.endsWith('/style.css')) {
+    e.respondWith(networkFirst(req, null));
+    return;
+  }
+
+  // 其它外壳资源(图标/manifest)：cache-first + 回源写入（离线秒开，几乎不变更）
+  e.respondWith(cacheFirst(req));
 });
+
+// cache-first + 回源写入（离线秒开；命中即返回，后台不强制联网核对）
+function cacheFirst(req) {
+  return caches.match(req, { ignoreSearch: true }).then(hit => hit || fetch(req).then(res => {
+    if (res.ok && res.type === 'basic') {
+      const copy = res.clone();
+      caches.open(VERSION).then(c => c.put(req, copy));
+    }
+    return res;
+  }).catch(() => hit || caches.match(req)));
+}
