@@ -418,7 +418,9 @@
     transition: max-height 0.25s ease;
   }
   .ref-panel.open .ref-panel-body {
-    max-height: 1200px;
+    max-height: 60vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     padding: 10px 16px;
     display: flex;
     flex-wrap: wrap;
