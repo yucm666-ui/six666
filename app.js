@@ -2,7 +2,7 @@
 // ======================== 应用版本号（单一数据源） ========================
 // 界面右上角与浏览器标签会显示此版本，方便平板上核对是否吃到了最新缓存。
 // 升级功能时改这一处即可，无需改别处。
-const APP_VERSION = '1.0.21';
+const APP_VERSION = '1.0.22';
 window.APP_VERSION = APP_VERSION;
 function applyVersion() {
   document.title = '工作歌单 v' + APP_VERSION;
@@ -94,7 +94,10 @@ function mergeSuffix(baseChord, suffix) {
   // 减：° 或 dim
   if (s.startsWith('°') || s.startsWith('dim')) {
     b = stripQuality(b);
-    s = s.replace(/^dim/, '°');
+    // °7/dim7 在本项目里约定表示半减七（非标准减七），统一渲染成标准 m7b5 写法；
+    // 纯 °/dim（无7）仍是减三和弦。
+    if (/^(°7|dim7)$/.test(s)) { s = 'm7b5'; }
+    else { s = s.replace(/^dim/, '°'); }
   }
   // 增：+ 或 aug
   if (s.startsWith('+') || s.startsWith('aug')) {
@@ -378,8 +381,8 @@ function letterToDegree(token, key) {
   for (let d = 1; d <= 7; d++) {
     const rRoot = chords[d - 1].replace(/dim$/, '').replace(/min$/, '').replace(/aug$/, '').replace(/m$/, ''); // 取该级顺阶根音（先剥 dim/min/aug 再剥 m）
     if ((NOTE_NORM[rRoot] % 12) !== rootPC) continue;
-    // 第7级(导音)的小七/半减七/减小七 → 大调自然音阶里就是半减七 vii°7，标准记法统一为 7°7（避免 domm7 类畸形记号）
-    if (d === 7 && /m7|b5|°/.test(quality)) return '7°7' + bassDeg;
+    // 第7级(导音)的小七/半减七/减小七 → 大调自然音阶里就是半减七 viiø7，统一用 m7b5 标准记法
+    if (d === 7 && /m7|b5|°/.test(quality)) return '7m7b5' + bassDeg;
     for (const q of qCands) {
       const test = d + q + bassDeg;
       if (numToChord(test, key) === token) return String(d) + (q || '') + bassDeg;
@@ -392,7 +395,7 @@ function letterToDegree(token, key) {
         const sem = degreeSemitones[d] + (acc === 'b' ? -1 : 1);
         const r = chromaticNotes[(keyIdx + sem + 120) % 12];
         if ((NOTE_NORM[r] % 12) !== rootPC) continue;
-        if (d === 7 && /m7|b5|°/.test(quality)) return acc + '7°7' + bassDeg;
+        if (d === 7 && /m7|b5|°/.test(quality)) return acc + '7m7b5' + bassDeg;
         for (const q of qCands) {
           const test = acc + d + q + bassDeg;
           if (numToChord(test, key) === token) return acc + d + (q || '') + bassDeg;
@@ -2072,7 +2075,7 @@ function chordInfo(name) {
   let iv, label;
   // 先长后短匹配：add9/maj9/m9 等必须排在裸 9/7/m 之前，否则 Cadd9 会被误判成属九
   if (/maj7|maj9|M7/.test(qual)) { iv = [0,4,7,11]; label = '大七和弦'; }
-  else if (/m7b5/.test(qual)) { iv = [0,3,6,10]; label = '半减七和弦'; }
+  else if (/m7b5|°7|dim7/.test(qual)) { iv = [0,3,6,10]; label = '半减七和弦'; }
   else if (/m9/.test(qual)) { iv = [0,3,7,10,14]; label = '小九和弦'; }
   else if (/m7/.test(qual)) { iv = [0,3,7,10]; label = '小七和弦'; }
   else if (/add9/.test(qual)) { iv = [0,4,7,14]; label = '加九和弦'; }
