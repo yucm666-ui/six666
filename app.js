@@ -2,7 +2,7 @@
 // ======================== 应用版本号（单一数据源） ========================
 // 界面右上角与浏览器标签会显示此版本，方便平板上核对是否吃到了最新缓存。
 // 升级功能时改这一处即可，无需改别处。
-const APP_VERSION = '1.0.22';
+const APP_VERSION = '1.0.23';
 window.APP_VERSION = APP_VERSION;
 function applyVersion() {
   document.title = '工作歌单 v' + APP_VERSION;
@@ -141,7 +141,7 @@ function numeratorOf(timeSig) {
 // 把一段和弦字母拆成符号数组（每个符号=1拍）。
 // 规则：'-' 即为一个休止拍；相邻字母按和弦边界切分（如 CG->C,G；DmEm->Dm,Em；C/G 保持整体）。
 function splitChordTokens(str) {
-  const re = /[A-G][#b]*(?:sus\d*|maj\d*|min|dim|aug|add\d*|[mM]\d*|\+|\°\d*|\d+)*(?:\/[A-G][#b]*)?/g;
+  const re = /[A-G][#b]*(?:sus\d*|maj\d*|min|dim|aug|add\d*|[mM]\d*|[b#]\d+|\+|\°\d*|\d+)*(?:\/[A-G][#b]*)?/g;
   const s = String(str == null ? '' : str);
   const out = [];
   let i = 0;
@@ -224,11 +224,11 @@ function measureCellsHtml(numStr, chordStr, beats, origKey, ignoreDeg) {
     const c = j >= 0 ? chords[j] : '';                // 该拍无和弦 → 休止
     const nRaw = (c && j >= 0 && j < numDegs.length) ? numDegs[j] : '';  // 休止拍不显示级数
     // 级数后缀（sus/maj/min/dim/aug/add 等）用小字；转位 /X 不缩小
-    const nHtml = nRaw ? nRaw.replace(/^([b#]?\d)((?:sus\d*|maj\d*|min|dim|aug|add\d*|[mM]\d*|\+|\°|\d+)?)(\/(?:[b#]?\d+))?$/,
+    const nHtml = nRaw ? nRaw.replace(/^([b#]?\d)((?:sus\d*|maj\d*|min|dim|aug|add\d*|[mM]\d*|[b#]\d+|\+|\°|\d+)?)(\/(?:[b#]?\d+))?$/,
       (_, root, suffix, slash) => root + (suffix ? '<small>' + suffix + '</small>' : '') + (slash || '')) : '';
     // 和弦字母行同步：转位 /X 不缩小；后缀与度数正则一致（含 [mM]\d*，避免大七 M7 被截断成 M）
     // 大七显示为标准写法：M7→maj7（如 GbM7→Gbmaj7、CM7→Cmaj7），小七 m7 / 属七 7 / maj7 不受影响
-    const chordHtml = c ? c.replace(/^([A-G][#b]*)((?:sus\d*|maj\d*|min|dim|aug|add\d*|[mM]\d*|\+|\°\d*|\d+)*)(\/[A-G][#b]*)?$/,
+    const chordHtml = c ? c.replace(/^([A-G][#b]*)((?:sus\d*|maj\d*|min|dim|aug|add\d*|[mM]\d*|[b#]\d+|\+|\°\d*|\d+)*)(\/[A-G][#b]*)?$/,
       (_, root, suffix, slash) => {
         const disp = suffix ? suffix.replace(/^M(?=\d)/, 'maj') : '';
         return root + (disp ? '<small>' + disp + '</small>' : '') + (slash || '');
@@ -332,7 +332,7 @@ function _shiftNote(note, semis, scale) {
 function transposeLetterChord(chordStr, semis, targetKey) {
   if (!semis) return chordStr;                 // 0 半音 = 原调，原样返回
   const scale = _pickScale(targetKey);
-  const re = /[A-G][#b]*(?:sus\d*|maj\d*|min|dim|aug|add\d*|[mM]\d*|\+|\°\d*|\d+)*(?:\/[A-G][#b]*)?/g;
+  const re = /[A-G][#b]*(?:sus\d*|maj\d*|min|dim|aug|add\d*|[mM]\d*|[b#]\d+|\+|\°\d*|\d+)*(?:\/[A-G][#b]*)?/g;
   return chordStr.replace(re, (chord) => {
     let out = chord.replace(/^([A-G][#b]*)/, (_, root) => _shiftNote(root, semis, scale));
     out = out.replace(/(\/[A-G][#b]*)$/, (m, bass) => '/' + _shiftNote(bass.slice(1), semis, scale));
